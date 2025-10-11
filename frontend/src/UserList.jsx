@@ -6,7 +6,7 @@ function UserList() {
 
   useEffect(() => {
     axios
-      .get("http://localhost:3000/api/users") // ← đổi đúng đường dẫn backend thật
+      .get("http://localhost:3000/api/users") 
       .then((res) => setUsers(res.data))
       .catch((err) => console.error("Lỗi tải user:", err));
   }, []);
@@ -17,7 +17,7 @@ function UserList() {
       <ul style={{ listStyle: "none", padding: 0 }}>
         {users.map((u) => (
           <li
-            key={u._id} // ← MongoDB dùng _id, không phải id
+            key={u._id} 
             style={{
               marginBottom: "15px",
               padding: "10px",
