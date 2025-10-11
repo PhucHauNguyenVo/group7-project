@@ -10,7 +10,7 @@ function AddUser({ onUserAdded }) {
     const newUser = { name, email };
 
     axios
-      .post("http://localhost:3000/api/users", newUser) // ← đổi thành /api/users nếu backend có prefix /api
+      .post("http://localhost:3000/api/users", newUser) 
       .then((res) => {
         onUserAdded(res.data);
         setName("");
