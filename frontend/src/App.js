@@ -1,21 +1,19 @@
-import React, { useState } from "react";  
-import UserList from "./UserList";
+import React, { useState } from "react";
 import AddUser from "./AddUser";
+import UserList from "./UserList";
 
 function App() {
-    const [users, setUsers] = useState([]);
+  const [reload, setReload] = useState(false);
 
-    const handleUserAdded = (newUser) => {
-        setUsers((prevUsers) => [...prevUsers, newUser]);
-    };
+  const reloadUsers = () => setReload(!reload);
 
-    return (
-        <div>
-            <h1 style={{ textAlign: "center" }}>Quản Lý User</h1>
-            <AddUser onUserAdded={handleUserAdded} />
-            <UserList users={users} />
-        </div>
-    );
+  return (
+    <div style={{ padding: 20 }}>
+      <h1 style={{ textAlign: "center" }}>Quản Lý User</h1>
+      <AddUser reloadUsers={reloadUsers} />
+      <UserList reload={reload} />
+    </div>
+  );
 }
 
 export default App;
