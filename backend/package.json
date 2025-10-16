@@ -1,11 +1,11 @@
 {
-<<<<<<< HEAD
+ HEAD
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
     "mongoose": "^8.19.1",
-=======
+
   "name": "backend",
   "version": "1.0.0",
   "description": "Backend server for group7-project using Express and MongoDB Atlas",
@@ -30,7 +30,7 @@
     "mongoose": "^8.19.1"
   },
   "devDependencies": {
->>>>>>> frontend
+ frontend
     "nodemon": "^3.1.10"
   }
 }
