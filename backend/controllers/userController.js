@@ -14,15 +14,21 @@ exports.getUsers = async (req, res) => {
 exports.createUser = async (req, res) => {
   try {
     const { name, role, email } = req.body;
-    if (!name || !role) return res.status(400).json({ message: 'name & role required' });
 
+    // ✅ chỉ kiểm tra name (role không bắt buộc nữa)
+    if (!name) {
+      return res.status(400).json({ message: 'name is required' });
+    }
+
+    // Tạo user mới
     const newUser = new User({ name, role, email });
     await newUser.save();
 
-    // trả về danh sách mới (hoặc bạn có thể trả newUser)
+    // ✅ Sau khi thêm, trả về danh sách mới nhất
     const users = await User.find().sort({ createdAt: -1 });
     res.status(201).json(users);
   } catch (err) {
+    console.error("❌ Lỗi khi tạo user:", err);
     res.status(500).json({ message: err.message });
   }
 };
@@ -39,6 +45,7 @@ exports.updateUser = async (req, res) => {
     const users = await User.find().sort({ createdAt: -1 });
     res.json(users);
   } catch (err) {
+    console.error("❌ Lỗi khi cập nhật user:", err);
     res.status(500).json({ message: err.message });
   }
 };
@@ -53,6 +60,7 @@ exports.deleteUser = async (req, res) => {
     const users = await User.find().sort({ createdAt: -1 });
     res.json(users);
   } catch (err) {
+    console.error("❌ Lỗi khi xóa user:", err);
     res.status(500).json({ message: err.message });
   }
 };
