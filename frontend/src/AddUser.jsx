@@ -1,45 +1,32 @@
-import { useState } from "react";
 import axios from "axios";
+import React, { useState } from "react";
 
-function AddUser({ onUserAdded }) {
+function AddUser({ reloadUsers }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleAddUser = async (e) => {
     e.preventDefault();
-    const newUser = { name, email };
 
-    axios
-      .post("http://localhost:3000/api/users", newUser) 
-      .then((res) => {
-        onUserAdded(res.data);
-        setName("");
-        setEmail("");
-      })
-      .catch((err) => console.error("Lỗi khi thêm user:", err));
+    try {
+      await axios.post(`${process.env.REACT_APP_API_URL}/users`, {
+        name,
+        email,
+      });
+      reloadUsers();
+      setName("");
+      setEmail("");
+    } catch (err) {
+      console.error("❌ Lỗi khi thêm user:", err);
+    }
   };
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>Thêm User Mới (MongoDB)</h2>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          placeholder="Tên"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <button type="submit">Thêm User</button>
-      </form>
-    </div>
+    <form onSubmit={handleAddUser}>
+      <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Tên" />
+      <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" />
+      <button type="submit">Thêm người dùng</button>
+    </form>
   );
 }
 
