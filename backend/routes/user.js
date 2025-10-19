@@ -1,0 +1,53 @@
+const express = require('express');
+const User = require('../User');
+
+const router = express.Router();
+const ALLOWED_ROLES = User.schema.path('role').enumValues;
+const resolveName = ({ name, fullName }) => (name || fullName || '').trim();
+
+const createUserHandler = async (req, res) => {
+  const { email, password } = req.body;
+  const role = req.body.role || 'user';
+  const resolvedName = resolveName(req.body);
+
+  if (!resolvedName || !email || !password) return res.status(400).json({ message: 'Name, email, and password are required.' });
+  if (!ALLOWED_ROLES.includes(role)) return res.status(400).json({ message: `Role must be one of: ${ALLOWED_ROLES.join(', ')}` });
+
+  try {
+    const user = await User.create({ name: resolvedName, email, password, role });
+    const { password: _, ...safeUser } = user.toObject({ versionKey: false });
+    res.status(201).json(safeUser);
+  } catch (err) {
+    if (err.code === 11000) return res.status(409).json({ message: 'Email already exists.' });
+    res.status(500).json({ message: 'Failed to create user.' });
+  }
+};
+
+const updateUserRole = async (req, res) => {
+  const { role } = req.body;
+  if (!ALLOWED_ROLES.includes(role)) return res.status(400).json({ message: `Role must be one of: ${ALLOWED_ROLES.join(', ')}` });
+
+  try {
+    const updated = await User.findByIdAndUpdate(req.params.id, { role }, { new: true }).select('-password -__v');
+    if (!updated) return res.status(404).json({ message: 'User not found.' });
+    res.json(updated);
+  } catch {
+    res.status(500).json({ message: 'Failed to update role.' });
+  }
+};
+
+router.post('/users', createUserHandler);
+router.post('/signup', createUserHandler);
+router.get('/users', async (_req, res) => {
+  try {
+    const users = await User.find().select('-password -__v');
+    res.json(users);
+  } catch {
+    res.status(500).json({ message: 'Failed to fetch users.' });
+  }
+});
+
+router.patch('/users/:id/role', updateUserRole);
+router.put('/users/:id/role', updateUserRole);
+
+module.exports = router;
