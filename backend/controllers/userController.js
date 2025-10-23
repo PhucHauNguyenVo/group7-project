@@ -1,15 +1,20 @@
+// controllers/userController.js
 const User = require('../models/userModel');
 const bcrypt = require('bcryptjs');
 
-// ===================== HOẠT ĐỘNG 3: QUẢN LÝ USER (ADMIN) ===================== //
+/* =========================================================
+   🧩 HOẠT ĐỘNG 3: QUẢN LÝ USER (ADMIN)
+   Chức năng: Admin có thể xem, tạo, sửa, xóa user.
+   Người dùng thường chỉ được cập nhật / xóa chính mình.
+   ========================================================= */
 
-// GET /api/users → chỉ Admin
+// [GET] /api/users → Chỉ Admin
 exports.getUsers = async (req, res) => {
   try {
     const users = await User.find().select('-password').sort({ createdAt: -1 });
     res.status(200).json({
-      message: 'Lấy danh sách user thành công!',
-      users
+      message: '✅ Lấy danh sách user thành công!',
+      users,
     });
   } catch (err) {
     console.error('❌ Lỗi getUsers:', err);
@@ -17,30 +22,38 @@ exports.getUsers = async (req, res) => {
   }
 };
 
-// POST /api/users → chỉ Admin
+// [POST] /api/users → Chỉ Admin
 exports.createUser = async (req, res) => {
   try {
     const { name, role, email, password } = req.body;
-    if (!name || !email) {
-      return res.status(400).json({ message: 'name và email là bắt buộc!' });
-    }
 
+    // Kiểm tra input
+    if (!name || !email)
+      return res.status(400).json({ message: 'Tên và email là bắt buộc!' });
+
+    // Kiểm tra trùng email
     const existing = await User.findOne({ email });
-    if (existing) {
+    if (existing)
       return res.status(400).json({ message: 'Email đã tồn tại!' });
-    }
 
+    // Mã hóa mật khẩu
     const hashedPassword = await bcrypt.hash(password || '123456', 10);
-    const newUser = await User.create({ name, role, email, password: hashedPassword });
+
+    const newUser = await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      role: role || 'user',
+    });
 
     res.status(201).json({
-      message: 'Tạo user thành công!',
+      message: '✅ Tạo user thành công!',
       user: {
         id: newUser._id,
         name: newUser.name,
         email: newUser.email,
-        role: newUser.role
-      }
+        role: newUser.role,
+      },
     });
   } catch (err) {
     console.error('❌ Lỗi createUser:', err);
@@ -48,7 +61,7 @@ exports.createUser = async (req, res) => {
   }
 };
 
-// PUT /api/users/:id → Admin hoặc chính chủ
+// [PUT] /api/users/:id → Admin hoặc chính chủ
 exports.updateUser = async (req, res) => {
   try {
     const { id } = req.params;
@@ -65,11 +78,12 @@ exports.updateUser = async (req, res) => {
       { new: true }
     ).select('-password');
 
-    if (!updated) return res.status(404).json({ message: 'User không tồn tại!' });
+    if (!updated)
+      return res.status(404).json({ message: 'User không tồn tại!' });
 
     res.status(200).json({
-      message: 'Cập nhật user thành công!',
-      user: updated
+      message: '✅ Cập nhật user thành công!',
+      user: updated,
     });
   } catch (err) {
     console.error('❌ Lỗi updateUser:', err);
@@ -77,7 +91,7 @@ exports.updateUser = async (req, res) => {
   }
 };
 
-// DELETE /api/users/:id → Admin hoặc chính chủ
+// [DELETE] /api/users/:id → Admin hoặc chính chủ
 exports.deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
@@ -88,25 +102,31 @@ exports.deleteUser = async (req, res) => {
     }
 
     const deleted = await User.findByIdAndDelete(id);
-    if (!deleted) return res.status(404).json({ message: 'User không tồn tại!' });
+    if (!deleted)
+      return res.status(404).json({ message: 'User không tồn tại!' });
 
-    res.status(200).json({ message: 'Xóa user thành công!' });
+    res.status(200).json({ message: '✅ Xóa user thành công!' });
   } catch (err) {
     console.error('❌ Lỗi deleteUser:', err);
     res.status(500).json({ message: 'Lỗi server khi xóa user!' });
   }
 };
 
-// ===================== HOẠT ĐỘNG 2: THÔNG TIN CÁ NHÂN ===================== //
+/* =========================================================
+   👤 HOẠT ĐỘNG 2: THÔNG TIN CÁ NHÂN
+   Người dùng đăng nhập có thể xem và cập nhật profile.
+   ========================================================= */
 
+// [GET] /api/users/profile → Người dùng đã đăng nhập
 exports.getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select('-password');
-    if (!user) return res.status(404).json({ message: 'Không tìm thấy người dùng!' });
+    if (!user)
+      return res.status(404).json({ message: 'Không tìm thấy người dùng!' });
 
-    res.json({
-      message: 'Lấy thông tin cá nhân thành công!',
-      user
+    res.status(200).json({
+      message: '✅ Lấy thông tin cá nhân thành công!',
+      user,
     });
   } catch (err) {
     console.error('❌ Lỗi getProfile:', err);
@@ -114,19 +134,28 @@ exports.getProfile = async (req, res) => {
   }
 };
 
+// [PUT] /api/users/profile → Người dùng đã đăng nhập
 exports.updateProfile = async (req, res) => {
   try {
     const { name, password } = req.body;
     const user = await User.findById(req.user._id);
-    if (!user) return res.status(404).json({ message: 'Không tìm thấy người dùng!' });
 
+    if (!user)
+      return res.status(404).json({ message: 'Không tìm thấy người dùng!' });
+
+    // Cập nhật thông tin
     if (name) user.name = name;
     if (password) user.password = await bcrypt.hash(password, 10);
 
     await user.save();
-    res.json({
-      message: 'Cập nhật thông tin thành công!',
-      user: { id: user._id, name: user.name, email: user.email }
+
+    res.status(200).json({
+      message: '✅ Cập nhật thông tin thành công!',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+      },
     });
   } catch (err) {
     console.error('❌ Lỗi updateProfile:', err);
