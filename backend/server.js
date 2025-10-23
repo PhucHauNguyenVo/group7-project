@@ -1,67 +1,42 @@
-const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
-const dotenv = require("dotenv");
-
-const User = require("./User");
-
-dotenv.config();
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const mongoose = require('mongoose');
 
 const app = express();
-app.use(cors());
+const PORT = process.env.PORT || 5000;
+
+app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PUT', 'DELETE'] }));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+let userRoutes;
+try {
+  userRoutes = require('./routes/user');
+} catch (err) {
+  console.error('Cannot load ./routes/user - check file path and name:', err.message || err);
+  const fallback = express.Router();
+  fallback.get('/', (_req, res) => res.json({ message: 'routes/user missing' }));
+  userRoutes = fallback;
+}
 
 const mongoUri = process.env.MONGO_URI;
 if (!mongoUri) {
-  console.error("❌ Missing MONGO_URI in environment variables");
+  console.error('❌ Missing MONGO_URI in environment variables');
   process.exit(1);
 }
 
 mongoose
   .connect(mongoUri)
-  .then(() => console.log("✅ MongoDB connected"))
+  .then(() => {
+    console.log('✅ MongoDB connected');
+    app.listen(PORT, () => console.log(`✅ Server started on port ${PORT}`));
+  })
   .catch(err => {
-    console.error("❌ MongoDB connection error:", err);
+    console.error('❌ MongoDB connection error:', err);
     process.exit(1);
   });
 
-app.get("/", (req, res) => {
-  res.send("Server is running 🚀");
-});
+app.get('/', (_req, res) => res.send('Server is running 🚀'));
+app.use('/api', userRoutes);
 
-app.get("/users", async (req, res) => {
-  try {
-    const users = await User.find().sort({ createdAt: -1 });
-    res.json(users);
-  } catch (err) {
-    console.error("❌ Failed to fetch users:", err);
-    res.status(500).json({ message: "Failed to fetch users" });
-  }
-});
-
-app.post("/users", async (req, res) => {
-  try {
-    const { username, email, password } = req.body;
-
-    if (!username || !email || !password) {
-      return res
-        .status(400)
-        .json({ message: "username, email, and password are required" });
-    }
-
-    const newUser = new User({ username, email, password });
-    const createdUser = await newUser.save();
-
-    res.status(201).json(createdUser);
-  } catch (err) {
-    if (err.code === 11000) {
-      return res.status(409).json({ message: "Username or email already exists" });
-    }
-
-    console.error("❌ Failed to create user:", err);
-    res.status(500).json({ message: "Failed to create user" });
-  }
-});
-
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`✅ Server started on port ${PORT}`));
