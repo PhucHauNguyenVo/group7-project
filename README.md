@@ -6,7 +6,7 @@
 | **Nguyễn Võ Phúc Hậu** | 226241 | DH22TIN03 | Backend |
 | **Trần Đại Nguyên** | 222038 | DH22TIN03 | Frontend |
 | **Sảm** | — | — | Nhóm trưởng + Backend |
-| **Tính** | — | — | Database |
+| **Tính** | 226238 | dh22tin03 | Database |
 
 ---
 
