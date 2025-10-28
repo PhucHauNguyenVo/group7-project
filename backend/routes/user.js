@@ -1,4 +1,3 @@
-// routes/user.js
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
@@ -16,7 +15,7 @@ router.get('/profile', protect, userController.getProfile);
 router.put('/profile', protect, userController.updateProfile);
 
 // ===========================================================
-// 🧩 HOẠT ĐỘNG 3: QUẢN LÝ USER (DÀNH CHO ADMIN)
+// 🧩 HOẠT ĐỘNG 3: QUẢN LÝ USER (ADMIN)
 // ===========================================================
 
 // 🟢 Lấy danh sách tất cả user (chỉ admin)
@@ -30,5 +29,14 @@ router.put('/:id', protect, userController.updateUser);
 
 // 🔴 Xóa user (admin hoặc chính chủ)
 router.delete('/:id', protect, userController.deleteUser);
+const upload = require('../middleware/uploadMiddleware');
+
+// 🔹 Upload avatar (người dùng đã đăng nhập)
+router.post(
+  '/upload-avatar',
+  protect,
+  upload.single('avatar'),
+  userController.uploadAvatar
+);
 
 module.exports = router;
