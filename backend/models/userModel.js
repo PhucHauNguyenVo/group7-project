@@ -40,14 +40,9 @@ const userSchema = new mongoose.Schema(
       default: '',
       comment: 'Đường dẫn ảnh đại diện (Cloudinary URL)',
     },
-    resetPasswordToken: {
-      type: String,
-      comment: 'Token reset mật khẩu tạm thời',
-    },
-    resetPasswordExpire: {
-      type: Date,
-      comment: 'Thời hạn hiệu lực của token reset',
-    },
+     // Fields for password reset flow
+     resetPasswordToken: { type: String },
+     resetPasswordExpire: { type: Date },
   },
   {
     timestamps: true, // ✅ Tự động tạo createdAt & updatedAt
