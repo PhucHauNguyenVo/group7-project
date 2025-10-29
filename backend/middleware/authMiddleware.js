@@ -24,9 +24,14 @@ exports.protect = async (req, res, next) => {
 
     // 3️⃣ Giải mã token bằng secret key
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'my_secret_key');
+    const userId = decoded.id || decoded.userId;
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Token không hợp lệ!' });
+    }
 
     // 4️⃣ Tìm user tương ứng trong MongoDB
-    req.user = await User.findById(decoded.id).select('-password');
+    req.user = await User.findById(userId).select('-password');
 
     // Nếu user không tồn tại
     if (!req.user) {

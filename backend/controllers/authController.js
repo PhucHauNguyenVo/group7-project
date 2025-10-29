@@ -9,19 +9,45 @@ const nodemailer = require('nodemailer');
 // ===========================================================
 exports.signup = async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { name, username, email, password, role } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email và mật khẩu là bắt buộc.' });
+    }
+
+    const displayName = (name || username || '').trim();
+    if (!displayName) {
+      return res.status(400).json({ message: 'Vui lòng cung cấp tên hiển thị.' });
+    }
 
     const existingUser = await User.findOne({ email });
-    if (existingUser)
-      return res.status(400).json({ message: 'Email đã tồn tại' });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Email đã tồn tại.' });
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await User.create({ username, email, password: hashedPassword });
+    const safeRole = User.USER_ROLES?.includes(role) ? role : undefined;
 
-    res.status(201).json({ message: 'Đăng ký thành công', user });
+    const user = await User.create({
+      name: displayName,
+      username: username || undefined,
+      email,
+      password: hashedPassword,
+      ...(safeRole ? { role: safeRole } : {}),
+    });
+
+    res.status(201).json({
+      message: 'Đăng ký thành công',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
   } catch (err) {
     console.error('❌ Lỗi đăng ký:', err);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Lỗi server khi đăng ký.' });
   }
 };
 
@@ -40,13 +66,24 @@ exports.login = async (req, res) => {
     if (!isMatch)
       return res.status(400).json({ message: 'Sai mật khẩu' });
 
+    const tokenPayload = { id: user._id, role: user.role };
     const token = jwt.sign(
-      { userId: user._id },
-      process.env.JWT_SECRET,
+      tokenPayload,
+      process.env.JWT_SECRET || 'my_secret_key',
       { expiresIn: '1d' }
     );
 
-    res.status(200).json({ message: 'Đăng nhập thành công', token });
+    res.status(200).json({
+      message: 'Đăng nhập thành công',
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar,
+      },
+    });
   } catch (err) {
     console.error('❌ Lỗi đăng nhập:', err);
     res.status(500).json({ message: err.message });
@@ -74,7 +111,8 @@ exports.forgotPassword = async (req, res) => {
     await user.save();
 
     // 🔹 Link reset (frontend)
-    const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+  const clientBase = process.env.CLIENT_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
+  const resetUrl = `${clientBase.replace(/\/?$/, '')}/reset-password/${resetToken}`;
 
     // 🔹 Cấu hình gửi mail
     const transporter = nodemailer.createTransport({
@@ -86,7 +124,7 @@ exports.forgotPassword = async (req, res) => {
     });
 
     const mailOptions = {
-      from: `"Nhóm 7 - Hệ thống" <${process.env.EMAIL_FROM}>`,
+  from: `"Nhóm 7 - Hệ thống" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
       to: user.email,
       subject: '🔐 Đặt lại mật khẩu của bạn',
       html: `

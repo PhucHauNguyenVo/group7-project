@@ -1,17 +1,18 @@
-// models/userModel.js
 const mongoose = require('mongoose');
 
-// ====================== 🧩 USER SCHEMA ====================== //
+const USER_ROLES = ['user', 'admin', 'student'];
+
 const userSchema = new mongoose.Schema(
   {
-    // Họ tên người dùng
     name: {
       type: String,
       required: [true, 'Vui lòng nhập tên người dùng!'],
       trim: true,
     },
-
-    // Email duy nhất cho mỗi tài khoản
+    username: {
+      type: String,
+      trim: true,
+    },
     email: {
       type: String,
       required: [true, 'Vui lòng nhập email!'],
@@ -19,36 +20,29 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       match: [/^\S+@\S+\.\S+$/, 'Email không hợp lệ!'],
     },
-
-    // Mật khẩu đã được mã hóa bằng bcrypt
     password: {
       type: String,
       required: [true, 'Vui lòng nhập mật khẩu!'],
       minlength: [6, 'Mật khẩu tối thiểu 6 ký tự!'],
     },
-
-    // Phân quyền người dùng
     role: {
       type: String,
-      enum: ['user', 'admin'],
+      enum: USER_ROLES,
       default: 'user',
     },
-
-    // ================== HOẠT ĐỘNG 4: NÂNG CAO ==================
     avatar: {
       type: String,
       default: '',
-      comment: 'Đường dẫn ảnh đại diện (Cloudinary URL)',
     },
-     // Fields for password reset flow
-     resetPasswordToken: { type: String },
-     resetPasswordExpire: { type: Date },
+    resetPasswordToken: { type: String },
+    resetPasswordExpire: { type: Date },
   },
   {
-    timestamps: true, // ✅ Tự động tạo createdAt & updatedAt
+    timestamps: true,
   }
 );
 
-// ====================== 🧩 EXPORT MODEL ====================== //
 const User = mongoose.model('User', userSchema);
+
 module.exports = User;
+module.exports.USER_ROLES = USER_ROLES;

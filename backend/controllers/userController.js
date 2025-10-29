@@ -10,7 +10,7 @@ const nodemailer = require('nodemailer');
    ========================================================= */
 exports.getUsers = async (req, res) => {
   try {
-    const users = await User.find().select('-password').sort({ createdAt: -1 });
+  const users = await User.find().select('-password').sort({ createdAt: -1 });
     res.status(200).json({ message: '✅ Lấy danh sách user thành công!', users });
   } catch (err) {
     console.error('❌ Lỗi getUsers:', err);
@@ -20,7 +20,7 @@ exports.getUsers = async (req, res) => {
 
 exports.createUser = async (req, res) => {
   try {
-    const { name, role, email, password } = req.body;
+    const { name, username, role, email, password } = req.body;
     if (!name || !email)
       return res.status(400).json({ message: 'Tên và email là bắt buộc!' });
 
@@ -31,6 +31,7 @@ exports.createUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password || '123456', 10);
     const newUser = await User.create({
       name,
+      username: username || undefined,
       email,
       password: hashedPassword,
       role: role || 'user',
@@ -41,6 +42,7 @@ exports.createUser = async (req, res) => {
       user: {
         id: newUser._id,
         name: newUser.name,
+        username: newUser.username,
         email: newUser.email,
         role: newUser.role,
       },
@@ -54,14 +56,14 @@ exports.createUser = async (req, res) => {
 exports.updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, role, email } = req.body;
+  const { name, username, role, email } = req.body;
 
     if (req.user.role !== 'admin' && req.user._id.toString() !== id)
       return res.status(403).json({ message: 'Không có quyền cập nhật user này!' });
 
     const updated = await User.findByIdAndUpdate(
       id,
-      { name, role, email },
+  { name, username, role, email },
       { new: true }
     ).select('-password');
 
@@ -111,13 +113,14 @@ exports.getProfile = async (req, res) => {
 
 exports.updateProfile = async (req, res) => {
   try {
-    const { name, email, password, avatar } = req.body;
+  const { name, username, email, password, avatar } = req.body;
     const user = await User.findById(req.user._id);
     if (!user)
       return res.status(404).json({ message: 'Không tìm thấy người dùng!' });
 
     if (name) user.name = name;
-    if (email) user.email = email;
+  if (email) user.email = email;
+  if (username !== undefined) user.username = username;
     if (password) user.password = await bcrypt.hash(password, 10);
     if (avatar !== undefined) user.avatar = avatar || "";
 
@@ -128,7 +131,8 @@ exports.updateProfile = async (req, res) => {
       user: {
         id: user._id,
         name: user.name,
-        email: user.email,
+  username: user.username,
+  email: user.email,
         avatar: user.avatar,
         role: user.role,
       },
