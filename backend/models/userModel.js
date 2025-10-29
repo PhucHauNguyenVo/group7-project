@@ -1,15 +1,54 @@
+// models/userModel.js
 const mongoose = require('mongoose');
 
-const userSchema = new mongoose.Schema({
-  name: { type: String, required: true },                // Tên người dùng
-  email: { type: String, required: true, unique: true }, // Email duy nhất
-  password: { type: String, required: true },            // Mật khẩu đã mã hóa
-  role: { type: String, default: 'user' },               // Mặc định là user
+// ====================== 🧩 USER SCHEMA ====================== //
+const userSchema = new mongoose.Schema(
+  {
+    // Họ tên người dùng
+    name: {
+      type: String,
+      required: [true, 'Vui lòng nhập tên người dùng!'],
+      trim: true,
+    },
 
-  // ====== THÊM CHO HOẠT ĐỘNG 4 ======
-  avatar: { type: String, default: '' },                 // Ảnh đại diện (Cloudinary URL)
-  resetPasswordToken: { type: String },                  // Token đặt lại mật khẩu
-  resetPasswordExpire: { type: Date },                   // Hạn sử dụng token reset
-}, { timestamps: true });
+    // Email duy nhất cho mỗi tài khoản
+    email: {
+      type: String,
+      required: [true, 'Vui lòng nhập email!'],
+      unique: true,
+      lowercase: true,
+      match: [/^\S+@\S+\.\S+$/, 'Email không hợp lệ!'],
+    },
 
-module.exports = mongoose.model('User', userSchema);
+    // Mật khẩu đã được mã hóa bằng bcrypt
+    password: {
+      type: String,
+      required: [true, 'Vui lòng nhập mật khẩu!'],
+      minlength: [6, 'Mật khẩu tối thiểu 6 ký tự!'],
+    },
+
+    // Phân quyền người dùng
+    role: {
+      type: String,
+      enum: ['user', 'admin'],
+      default: 'user',
+    },
+
+    // ================== HOẠT ĐỘNG 4: NÂNG CAO ==================
+    avatar: {
+      type: String,
+      default: '',
+      comment: 'Đường dẫn ảnh đại diện (Cloudinary URL)',
+    },
+     // Fields for password reset flow
+     resetPasswordToken: { type: String },
+     resetPasswordExpire: { type: Date },
+  },
+  {
+    timestamps: true, // ✅ Tự động tạo createdAt & updatedAt
+  }
+);
+
+// ====================== 🧩 EXPORT MODEL ====================== //
+const User = mongoose.model('User', userSchema);
+module.exports = User;

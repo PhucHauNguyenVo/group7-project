@@ -1,123 +1,155 @@
 const User = require('../models/userModel');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const mongoose = require('mongoose');
 const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'my_secret_key';
-
-// ================== Đăng ký (Sign Up) ==================
+// ===========================================================
+// 🟢 ĐĂNG KÝ
+// ===========================================================
 exports.signup = async (req, res) => {
   try {
-    console.log('🛠️ authController.signup - mongoose.readyState =', mongoose.connection.readyState);
-    if (mongoose.connection.readyState !== 1) {
-      return res.status(503).json({ message: 'Database not connected. Please try again later.' });
-    }
-
-    const { name, email, password, role } = req.body;
-    if (!name || !email || !password)
-      return res.status(400).json({ message: 'Vui lòng nhập đầy đủ thông tin!' });
+    const { username, email, password } = req.body;
 
     const existingUser = await User.findOne({ email });
     if (existingUser)
-      return res.status(400).json({ message: 'Email đã tồn tại!' });
+      return res.status(400).json({ message: 'Email đã tồn tại' });
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-      role: role || 'user',
-    });
+    const user = await User.create({ username, email, password: hashedPassword });
 
-    res.status(201).json({
-      message: 'Đăng ký thành công!',
-      user: { id: newUser._id, name: newUser.name, email: newUser.email, role: newUser.role },
-    });
+    res.status(201).json({ message: 'Đăng ký thành công', user });
   } catch (err) {
-    console.error('❌ Signup Error:', err);
-    res.status(500).json({ message: 'Lỗi server', error: err.message });
+    console.error('❌ Lỗi đăng ký:', err);
+    res.status(500).json({ message: err.message });
   }
 };
 
-// ================== Đăng nhập (Login) ==================
+// ===========================================================
+// 🟢 ĐĂNG NHẬP
+// ===========================================================
 exports.login = async (req, res) => {
   try {
-    console.log('🛠️ authController.login - mongoose.readyState =', mongoose.connection.readyState);
     const { email, password } = req.body;
+    const user = await User.findOne({ email });
 
-    if (!email || !password)
-      return res.status(400).json({ message: 'Thiếu email hoặc mật khẩu!' });
+    if (!user)
+      return res.status(404).json({ message: 'Không tìm thấy người dùng' });
 
-    const user = await User.findOne({ email }).lean();
-    if (!user) return res.status(404).json({ message: 'Không tìm thấy người dùng!' });
-
-    const validPass = await bcrypt.compare(password, user.password);
-    if (!validPass) return res.status(401).json({ message: 'Sai mật khẩu!' });
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch)
+      return res.status(400).json({ message: 'Sai mật khẩu' });
 
     const token = jwt.sign(
-      { id: user._id, role: user.role, name: user.name, email: user.email },
-      JWT_SECRET,
-      { expiresIn: '1h' }
+      { userId: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' }
     );
 
-    res.json({ message: 'Đăng nhập thành công!', token, user: { id: user._id, name: user.name, role: user.role } });
+    res.status(200).json({ message: 'Đăng nhập thành công', token });
   } catch (err) {
-    console.error('❌ Login Error:', err);
-    res.status(500).json({ message: 'Lỗi server', error: err.message });
+    console.error('❌ Lỗi đăng nhập:', err);
+    res.status(500).json({ message: err.message });
   }
 };
 
-// ================== Quên mật khẩu (Forgot Password) ==================
+// ===========================================================
+// 🔐 QUÊN MẬT KHẨU
+// ===========================================================
 exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
     const user = await User.findOne({ email });
-    if (!user)
-      return res.status(404).json({ message: 'Email không tồn tại trong hệ thống!' });
 
-    const resetToken = crypto.randomBytes(20).toString('hex');
-    user.resetPasswordToken = resetToken;
-    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 phút
+    if (!user)
+      return res.status(404).json({ message: 'Email không tồn tại trong hệ thống' });
+
+    // 🔹 Tạo token reset
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenHashed = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+    // 🔹 Lưu token hash và thời hạn
+    user.resetPasswordToken = resetTokenHashed;
+    user.resetPasswordExpire = Date.now() + 15 * 60 * 1000; // 15 phút
     await user.save();
 
-    const resetUrl = `http://localhost:4000/api/auth/reset-password/${resetToken}`;
-    console.log('📩 Link reset mật khẩu:', resetUrl);
+    // 🔹 Link reset (frontend)
+    const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
 
-    res.json({ message: 'Token reset đã được tạo!', resetUrl });
+    // 🔹 Cấu hình gửi mail
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    const mailOptions = {
+      from: `"Nhóm 7 - Hệ thống" <${process.env.EMAIL_FROM}>`,
+      to: user.email,
+      subject: '🔐 Đặt lại mật khẩu của bạn',
+      html: `
+        <h3>Xin chào ${user.username || 'bạn'},</h3>
+        <p>Bạn vừa yêu cầu đặt lại mật khẩu cho tài khoản tại hệ thống Nhóm 7.</p>
+        <p>Nhấn vào liên kết bên dưới để đặt lại mật khẩu (có hiệu lực trong 15 phút):</p>
+        <a href="${resetUrl}" style="padding:10px 15px;background:#007bff;color:#fff;border-radius:5px;text-decoration:none;">Đặt lại mật khẩu</a>
+        <br><br>
+        <p>Nếu bạn không yêu cầu, hãy bỏ qua email này.</p>
+        <p>Trân trọng,<br>Nhóm 7</p>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.status(200).json({
+      message: '✅ Đã gửi email đặt lại mật khẩu!',
+    });
   } catch (err) {
-    console.error('❌ forgotPassword error:', err);
-    res.status(500).json({ message: 'Lỗi server khi xử lý forgot-password!' });
+    console.error('❌ Lỗi gửi email đặt lại mật khẩu:', err);
+    res.status(500).json({ message: 'Lỗi khi gửi email', error: err.message });
   }
 };
 
-// ================== Đặt lại mật khẩu (Reset Password) ==================
+// ===========================================================
+// 🟢 ĐẶT LẠI MẬT KHẨU
+// ===========================================================
 exports.resetPassword = async (req, res) => {
   try {
     const { token } = req.params;
     const { newPassword } = req.body;
 
+    if (!token) return res.status(400).json({ message: 'Thiếu token trong URL' });
+
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+    console.log('🔍 Token từ URL:', token);
+    console.log('🔍 Token hash tìm trong DB:', hashedToken);
+
     const user = await User.findOne({
-      resetPasswordToken: token,
-      resetPasswordExpire: { $gt: Date.now() },
+      resetPasswordToken: hashedToken,
+      resetPasswordExpire: { $gt: Date.now() }, // 🔹 đúng field
     });
 
     if (!user)
-      return res.status(400).json({ message: 'Token không hợp lệ hoặc đã hết hạn!' });
+      return res.status(400).json({ message: 'Token không hợp lệ hoặc đã hết hạn' });
 
+    // 🔹 Cập nhật mật khẩu
     user.password = await bcrypt.hash(newPassword, 10);
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
+
     await user.save();
 
-    res.json({ message: 'Đặt lại mật khẩu thành công!' });
+    res.status(200).json({ message: '✅ Đặt lại mật khẩu thành công!' });
   } catch (err) {
-    console.error('❌ resetPassword error:', err);
-    res.status(500).json({ message: 'Lỗi server khi reset mật khẩu!' });
+    console.error('❌ Lỗi đặt lại mật khẩu:', err);
+    res.status(500).json({ message: err.message });
   }
 };
 
-// ================== Đăng xuất (Logout) ==================
+// ===========================================================
+// 🟢 ĐĂNG XUẤT
+// ===========================================================
 exports.logout = async (req, res) => {
-  res.json({ message: 'Đăng xuất thành công! (client tự xóa token)' });
+  res.status(200).json({ message: 'Đăng xuất thành công' });
 };

@@ -7,27 +7,15 @@
     "start": "node server.js",
     "dev": "nodemon server.js"
   },
-  "keywords": [
-    "express",
-    "mongodb",
-    "mongoose",
-    "backend",
-    "api"
-  ],
+  "keywords": ["express", "mongodb", "mongoose", "backend", "api"],
   "author": "Phúc Hậu - Backend",
   "license": "ISC",
   "dependencies": {
- backend-auth
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
-
-    "cors": "^2.8.5",
-    "dotenv": "^17.2.3",
-    "express": "^5.1.0",
- main
     "mongoose": "^8.19.1"
   },
   "devDependencies": {
