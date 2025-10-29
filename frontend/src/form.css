@@ -1,0 +1,440 @@
+body {
+  font-family: Arial, sans-serif;
+  background: #f2f4f8;
+  margin: 0;
+  padding: 0;
+}
+
+.auth-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
+
+.auth-box {
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  width: 320px;
+  text-align: center;
+}
+
+.auth-box h2 {
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.auth-box form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auth-box input {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.auth-box button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.auth-box button:hover {
+  background-color: #0056b3;
+}
+
+.auth-message {
+  margin-top: 10px;
+  font-size: 14px;
+  color: #333;
+}
+
+.link-text {
+  margin-top: 12px;
+  font-size: 14px;
+  color: #007bff;
+  cursor: pointer;
+}
+
+.link-text:hover {
+  text-decoration: underline;
+}
+/* 🌈 Profile Page Styles */
+.profile-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 90vh;
+  background: linear-gradient(135deg, #e0f2fe, #f1f5f9);
+  font-family: "Segoe UI", sans-serif;
+}
+
+.profile-card {
+  background-color: #fff;
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.1);
+  width: 420px;
+  text-align: center;
+  transition: 0.3s;
+}
+
+.profile-title {
+  color: #1e3a8a;
+  font-size: 1.8rem;
+  margin-bottom: 25px;
+}
+
+.profile-info {
+  text-align: left;
+  background-color: #f8fafc;
+  padding: 16px;
+  border-radius: 10px;
+}
+
+.form-group {
+  text-align: left;
+  margin-bottom: 14px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  outline-color: #2563eb;
+}
+
+.form-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 25px;
+}
+
+/* 🎨 Button styles */
+.btn {
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.25s;
+}
+
+.btn-primary {
+  background-color: #2563eb;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #1d4ed8;
+}
+
+.btn-success {
+  background-color: #16a34a;
+  color: white;
+}
+
+.btn-success:hover {
+  background-color: #15803d;
+}
+
+.btn-cancel {
+  background-color: #9ca3af;
+  color: white;
+}
+
+.btn-cancel:hover {
+  background-color: #6b7280;
+}
+
+.profile-loading {
+  text-align: center;
+  margin-top: 60px;
+  font-size: 1.2rem;
+}
+/* Spinner */
+.spinner {
+  text-align: center;
+  font-size: 1.2rem;
+  margin-top: 50px;
+}
+
+/* Toast thông báo */
+.toast {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  padding: 14px 20px;
+  border-radius: 8px;
+  font-weight: bold;
+  color: white;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  animation: fadein 0.3s, fadeout 0.3s 2.7s;
+  z-index: 999;
+}
+
+.toast-success {
+  background-color: #16a34a;
+}
+
+.toast-error {
+  background-color: #ef4444;
+}
+
+@keyframes fadein {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeout {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(20px); }
+}
+.navbar { background:#1e293b; color:#fff; padding:15px 40px; display:flex; justify-content:space-between; align-items:center; font-family:"Segoe UI",sans-serif; box-shadow:0 2px 10px rgba(0,0,0,0.2);}
+.navbar-buttons .btn { margin-left:8px; padding:8px 14px; border:none; border-radius:6px; cursor:pointer; font-weight:bold; transition:0.2s; color:white; }
+.btn-primary{background:#3b82f6;}
+.btn-primary:hover{background:#2563eb;}
+.btn-danger{background:#ef4444;}
+.btn-danger:hover{background:#dc2626;}
+.btn-warning{background:#f59e0b;}
+.btn-warning:hover{background:#d97706;}
+.btn-edit{background:#6c757d; margin-right:5px;}
+.btn-edit:hover{background:#5a6268;}
+.btn-delete{background:#dc3545;}
+.btn-delete:hover{background:#b02a37;}
+.btn-save{background:#28a745;}
+.btn-save:hover{background:#218838;}
+.btn-cancel{background:#ffc107;}
+.btn-cancel:hover{background:#e0a800;}
+
+toast {
+  font-size: 14px;
+  padding: 6px 10px;
+  display: inline-block;
+  max-width: 200px;
+  text-align: center;
+}
+
+.adduser-form{display:flex; gap:10px; margin-bottom:20px;}
+.adduser-form input{padding:8px 10px; border:1px solid #ccc; border-radius:6px; outline:none;}
+.adduser-form input:focus{border-color:#007bff;}
+.adduser-form button{border-radius:6px; padding:8px 12px;}
+.userlist-table{width:100%; border-collapse:collapse;}
+.userlist-table th, .userlist-table td{padding:10px; border:1px solid #ddd;}
+.row-even{background:#f9f9f9;}
+.row-odd{background:#fff;}
+
+.userlist-container {
+  max-width: 900px;
+  margin: 20px auto;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  font-family: "Segoe UI", sans-serif;
+}
+
+.userlist-container {
+  max-width: 900px;        /* Giới hạn chiều rộng */
+  margin: 30px auto;       /* Căn giữa trang */
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  font-family: "Segoe UI", sans-serif;
+  overflow-x: auto;        /* Nếu bảng quá rộng, scroll ngang */
+}
+
+.userlist-container h2 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.userlist-table {
+  width: 100%;
+  min-width: 600px;        /* Giữ bảng tối thiểu vừa phải */
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.userlist-table th, .userlist-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #ddd;
+}
+
+.userlist-table th {
+  background: #1e293b;
+  color: white;
+  font-weight: 600;
+}
+
+.row-even { background: #ffffff; }
+.row-odd { background: #f1f3f5; }
+
+.edit-input, .edit-select {
+  width: 100%;
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+.btn {
+  margin: 2px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.btn-edit { background: #0ea5e9; color: white; }
+.btn-delete { background: #ef4444; color: white; }
+.btn-save { background: #22c55e; color: white; }
+.btn-cancel { background: #f97316; color: white; }
+
+.no-data { text-align: center; color: #555; font-style: italic; }
+
+
+/* 🌟 Form thêm user */
+.adduser-form {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 25px auto;
+  padding: 20px;
+  max-width: 900px;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+}
+
+.adduser-form input,
+.adduser-form select {
+  flex: 1;
+  min-width: 160px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  font-size: 14px;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.adduser-form input:focus,
+.adduser-form select:focus {
+  border-color: #2563eb;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.adduser-form button {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 14px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.25s ease, transform 0.15s ease;
+}
+
+.adduser-form button:hover {
+  background-color: #2563eb;
+  transform: translateY(-1px);
+}
+
+
+/* 🌈 Danh sách người dùng */
+.userlist-container {
+  max-width: 2000px;
+  margin: 30px auto;
+  padding: 30px;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+  text-align: center;
+}
+
+.userlist-container h2 {
+  text-align: center;
+  color: #1e3a8a;
+  margin-bottom: 20px;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.userlist-table {
+  width: 100%;
+  min-width: 800px;
+  border-collapse: separate;
+  border-spacing: 0;
+  text-align: left;
+  overflow: hidden;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.userlist-table th,
+.userlist-table td {
+  padding: 12px 14px;
+}
+
+.userlist-table th {
+  background: #1e293b;
+  color: #f9fafb;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.userlist-table tr:nth-child(even) {
+  background: #f9fafb;
+}
+
+.userlist-table tr:nth-child(odd) {
+  background: #ffffff;
+}
+
+.userlist-table tr:hover {
+  background: #dbeafe;
+  transition: background 0.2s ease;
+}
+
+.userlist-table td {
+  border-top: 1px solid #e5e7eb;
+}
+
+.no-data {
+  text-align: center;
+  color: #6b7280;
+  font-style: italic;
+  padding: 20px;
+}
+ 
+.loading {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+}
