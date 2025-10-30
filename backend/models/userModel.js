@@ -30,7 +30,8 @@ const userSchema = new mongoose.Schema(
     // Phân quyền người dùng
     role: {
       type: String,
-      enum: ['user', 'admin'],
+      // Thêm 'moderator' cho phân quyền nâng cao (Hoạt động 2)
+      enum: ['user', 'admin', 'moderator'],
       default: 'user',
     },
 
