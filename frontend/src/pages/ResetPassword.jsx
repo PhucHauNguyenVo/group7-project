@@ -10,6 +10,7 @@ export default function ResetPassword() {
   const queryToken = q.get("token");
   const queryEmail = q.get("email");
   const token = paramToken || queryToken || "";
+  const [tokenInput, setTokenInput] = useState(token);
 
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -18,39 +19,40 @@ export default function ResetPassword() {
 
   useEffect(() => {
     console.log("DEBUG ResetPassword token (param/query):", { paramToken, queryToken, token, queryEmail });
-    if (!token) setError("Thiếu token reset. Kiểm tra link email hoặc dán token vào ô (nếu có).");
+    setTokenInput(token);
+    if (!token) setError("Thiếu token reset. Kiểm tra link email hoặc dán token vào ô.");
   }, [paramToken, queryToken, token, queryEmail]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    if (!token) return setError("Không có token reset.");
+  if (!tokenInput) return setError("Không có token reset.");
     if (password.length < 6) return setError("Mật khẩu tối thiểu 6 ký tự.");
     if (password !== confirm) return setError("Mật khẩu xác nhận không khớp.");
 
     setLoading(true);
-    const API = (process.env.REACT_APP_API_URL || "http://localhost:4000").replace(/\/$/, "");
+  const API = (process.env.REACT_APP_API_URL || "http://localhost:4000").replace(/\/$/, "");
 
     // Các biến thể URL và body để thử (tăng khả năng tương thích với backend khác nhau)
     const candidates = [];
 
     // 1) path variants: /auth/reset-password/:token and /api/auth/reset-password/:token
-    candidates.push({ url: `${API}/auth/reset-password/${encodeURIComponent(token)}`, body: { password } });
-    candidates.push({ url: `${API}/api/auth/reset-password/${encodeURIComponent(token)}`, body: { password } });
+  candidates.push({ url: `${API}/auth/reset-password/${encodeURIComponent(tokenInput)}`, body: { password } });
+  candidates.push({ url: `${API}/api/auth/reset-password/${encodeURIComponent(tokenInput)}`, body: { password } });
     // try newPassword field name as some backends expect that
-    candidates.push({ url: `${API}/auth/reset-password/${encodeURIComponent(token)}`, body: { newPassword: password } });
-    candidates.push({ url: `${API}/api/auth/reset-password/${encodeURIComponent(token)}`, body: { newPassword: password } });
+  candidates.push({ url: `${API}/auth/reset-password/${encodeURIComponent(tokenInput)}`, body: { newPassword: password } });
+  candidates.push({ url: `${API}/api/auth/reset-password/${encodeURIComponent(tokenInput)}`, body: { newPassword: password } });
 
     // 2) body variants: POST /auth/reset-password with { token, password } or { token, newPassword }
-    candidates.push({ url: `${API}/auth/reset-password`, body: { token, password } });
-    candidates.push({ url: `${API}/api/auth/reset-password`, body: { token, password } });
-    candidates.push({ url: `${API}/auth/reset-password`, body: { token, newPassword: password } });
-    candidates.push({ url: `${API}/api/auth/reset-password`, body: { token, newPassword: password } });
+  candidates.push({ url: `${API}/auth/reset-password`, body: { token: tokenInput, password } });
+  candidates.push({ url: `${API}/api/auth/reset-password`, body: { token: tokenInput, password } });
+  candidates.push({ url: `${API}/auth/reset-password`, body: { token: tokenInput, newPassword: password } });
+  candidates.push({ url: `${API}/api/auth/reset-password`, body: { token: tokenInput, newPassword: password } });
 
     // 3) some implementations require email + token
     if (queryEmail) {
-      candidates.push({ url: `${API}/auth/reset-password`, body: { token, email: queryEmail, password } });
-      candidates.push({ url: `${API}/api/auth/reset-password`, body: { token, email: queryEmail, password } });
+  candidates.push({ url: `${API}/auth/reset-password`, body: { token: tokenInput, email: queryEmail, password } });
+  candidates.push({ url: `${API}/api/auth/reset-password`, body: { token: tokenInput, email: queryEmail, password } });
     }
 
     // dedupe candidate urls
@@ -97,7 +99,13 @@ export default function ResetPassword() {
         <h2>Đổi mật khẩu</h2>
         {error && <div style={{ color: "red", marginBottom: 8 }}>{error}</div>}
         <form onSubmit={handleSubmit}>
-          {!paramToken && <input placeholder="Token reset (nếu có)" value={token} readOnly />}
+          {!paramToken && (
+            <input
+              placeholder="Token reset (dán vào nếu link sai miền)"
+              value={tokenInput}
+              onChange={(e) => setTokenInput(e.target.value)}
+            />
+          )}
           <input type="password" placeholder="Mật khẩu mới" value={password} onChange={(e) => setPassword(e.target.value)} />
           <input type="password" placeholder="Xác nhận mật khẩu" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
           <button type="submit" disabled={loading}>{loading ? "Đang xử lý..." : "Đổi mật khẩu"}</button>
