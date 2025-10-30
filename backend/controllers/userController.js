@@ -241,7 +241,16 @@ exports.forgotPassword = async (req, res) => {
     user.resetPasswordExpire = resetTokenExpire;
     await user.save();
 
-    const resetURL = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+    // Lấy CLIENT_URL từ .env, loại bỏ gạch chéo dư cuối nếu có
+    let clientUrl = process.env.CLIENT_URL || process.env.FRONTEND_URL;
+    if (!clientUrl) {
+      throw new Error('CLIENT_URL chưa được cấu hình trong .env');
+    }
+    clientUrl = clientUrl.replace(/\/$/, '');
+    const resetURL = `${clientUrl}/reset-password/${resetToken}`;
+    // Log ra console để QA kiểm tra
+    console.log('🔗 Reset password URL:', resetURL);
+
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
@@ -261,7 +270,7 @@ exports.forgotPassword = async (req, res) => {
     };
 
     await transporter.sendMail(mailOptions);
-    res.status(200).json({ message: '✅ Đã gửi liên kết đặt lại mật khẩu qua email!' });
+    res.status(200).json({ message: '✅ Đã gửi liên kết đặt lại mật khẩu qua email!', resetURL });
   } catch (err) {
     console.error('❌ Lỗi forgotPassword:', err);
     res.status(500).json({ message: 'Lỗi server khi gửi email đặt lại mật khẩu!' });
