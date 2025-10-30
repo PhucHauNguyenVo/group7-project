@@ -13,7 +13,17 @@ const UserList = forwardRef(({ showToast }, ref) => {
 
   // Lấy danh sách user
   const fetchUsers = async () => {
-    const candidates = [EP.usersList, "/users", "/user", "/admin/users", "/users/all"];
+    const meLocal = JSON.parse(localStorage.getItem("user") || "null");
+    const isModLocal = (meLocal?.role || "").toLowerCase() === "moderator";
+    const candidates = [
+      EP.usersList,
+      "/users",
+      "/user",
+      "/admin/users",
+      "/users/all",
+      "/users/list",
+      "/users/basic",
+    ];
     try {
       let res;
       let lastErr;
@@ -21,13 +31,29 @@ const UserList = forwardRef(({ showToast }, ref) => {
         try {
           // Đảm bảo header Authorization luôn có mặt
           const token = getToken();
-          res = await apiClient.get(url, token ? { headers: { Authorization: `Bearer ${token}` } } : undefined);
+          res = await apiClient.get(
+            url,
+            token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+          );
           break;
         } catch (e) {
           lastErr = e;
           const status = e?.response?.status;
-          if (status === 404 || status === 405) continue;
+          // Nếu endpoint không tồn tại hoặc bị cấm (403), thử endpoint kế tiếp
+          if (status === 404 || status === 405 || status === 403) continue;
           throw e;
+        }
+      }
+      // Nếu moderator không gọi được danh sách, fallback lấy chính profile của họ
+      if (!res && isModLocal) {
+        try {
+          const token = getToken();
+          res = await apiClient.get(
+            EP.profile || "/users/profile",
+            token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+          );
+        } catch (e2) {
+          lastErr = e2;
         }
       }
       if (!res) throw lastErr || new Error("No users endpoint");
@@ -35,10 +61,10 @@ const UserList = forwardRef(({ showToast }, ref) => {
       const payload = res.data;
       const data = Array.isArray(payload)
         ? payload
-        : payload?.users || payload?.data || [];
+        : payload?.users || payload?.data || (payload?._id || payload?.id ? [payload] : []);
       const me = payload?.me || payload?.currentUser || JSON.parse(localStorage.getItem("user"));
       setUsers(data);
-      setCurrentUserRole(me?.role || "user");
+      setCurrentUserRole((me?.role || "user").toLowerCase());
     } catch (err) {
       const status = err?.response?.status;
       const msg = err?.response?.data?.message || err?.message || "";
@@ -57,9 +83,16 @@ const UserList = forwardRef(({ showToast }, ref) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // RBAC flags
+  const isAdmin = (currentUserRole || "").toLowerCase() === "admin";
+  const isModerator = (currentUserRole || "").toLowerCase() === "moderator";
+  const canEditBasic = isAdmin || isModerator; // sửa name/email
+  const canChangeRole = isAdmin; // chỉ admin đổi role
+  const canDelete = isAdmin; // chỉ admin xoá
+
   // Xóa user (chỉ admin)
   const handleDelete = async (id) => {
-    if (currentUserRole !== "admin") {
+    if (!canDelete) {
       showToast?.("Bạn không có quyền xóa người dùng", "error");
       return;
     }
@@ -77,7 +110,7 @@ const UserList = forwardRef(({ showToast }, ref) => {
 
   // Bắt đầu chỉnh sửa
   const handleEdit = (user) => {
-    if (currentUserRole !== "admin") {
+    if (!canEditBasic) {
       showToast?.("Bạn không có quyền chỉnh sửa người dùng", "error");
       return;
     }
@@ -91,13 +124,16 @@ const UserList = forwardRef(({ showToast }, ref) => {
 
   // Lưu chỉnh sửa
   const handleSave = async (id) => {
-    if (currentUserRole !== "admin") {
+    if (!canEditBasic) {
       showToast?.("Bạn không có quyền cập nhật người dùng", "error");
       return;
     }
 
+    const payload = { name: editData.name, email: editData.email };
+    if (canChangeRole) payload.role = editData.role;
+
     try {
-      await apiClient.put(`/users/${id}`, editData);
+      await apiClient.put(`/users/${id}`, payload);
       setEditingUser(null);
       fetchUsers();
       showToast?.("💾 Cập nhật user thành công", "success");
@@ -129,55 +165,56 @@ const UserList = forwardRef(({ showToast }, ref) => {
           </thead>
           <tbody>
             {users.map((u, i) => (
-              <tr key={u._id} className={i % 2 === 0 ? "row-even" : "row-odd"}>
+              <tr key={u._id || u.id} className={i % 2 === 0 ? "row-even" : "row-odd"}>
                 <td>{i + 1}</td>
                 <td>
-                  {editingUser === u._id ? (
+                  {editingUser === (u._id || u.id) ? (
                     <input
                       className="edit-input"
                       value={editData.name}
                       onChange={(e) =>
                         setEditData({ ...editData, name: e.target.value })
                       }
-                      disabled={currentUserRole !== "admin"}
+                      disabled={!canEditBasic}
                     />
                   ) : (
                     u.name
                   )}
                 </td>
                 <td>
-                  {editingUser === u._id ? (
+                  {editingUser === (u._id || u.id) ? (
                     <select
                       className="edit-select"
                       value={editData.role}
                       onChange={(e) =>
                         setEditData({ ...editData, role: e.target.value })
                       }
-                      disabled={currentUserRole !== "admin"}
+                      disabled={!canChangeRole}
                     >
                       <option value="user">User</option>
                       <option value="admin">Admin</option>
+                      <option value="moderator">Moderator</option>
                     </select>
                   ) : (
                     u.role
                   )}
                 </td>
                 <td>
-                  {editingUser === u._id ? (
+                  {editingUser === (u._id || u.id) ? (
                     <input
                       className="edit-input"
                       value={editData.email}
                       onChange={(e) =>
                         setEditData({ ...editData, email: e.target.value })
                       }
-                      disabled={currentUserRole !== "admin"} // chỉ admin mới sửa email
+                      disabled={!canEditBasic} // user thường không sửa
                     />
                   ) : (
                     u.email
                   )}
                 </td>
                 <td>
-                  {currentUserRole === "admin" ? (
+                  {canEditBasic || canDelete ? (
                     editingUser === (u._id || u.id) ? (
                       <>
                         <button
@@ -195,18 +232,22 @@ const UserList = forwardRef(({ showToast }, ref) => {
                       </>
                     ) : (
                       <>
-                        <button
-                          className="btn btn-edit"
-                          onClick={() => handleEdit(u)}
-                        >
-                          ✏️ Sửa
-                        </button>
-                        <button
-                          className="btn btn-delete"
-                          onClick={() => handleDelete(u._id || u.id)}
-                        >
-                          🗑️ Xóa
-                        </button>
+                        {canEditBasic && (
+                          <button
+                            className="btn btn-edit"
+                            onClick={() => handleEdit(u)}
+                          >
+                            ✏️ Sửa
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button
+                            className="btn btn-delete"
+                            onClick={() => handleDelete(u._id || u.id)}
+                          >
+                            🗑️ Xóa
+                          </button>
+                        )}
                       </>
                     )
                   ) : (
