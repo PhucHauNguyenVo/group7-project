@@ -30,11 +30,18 @@ export const login = async (userData) => {
   const data = res.data;
 
   // ✅ Nếu backend trả về token và user, lưu lại vào localStorage
-  if (data.token) {
-    localStorage.setItem("token", data.token);
+  const accessToken = data.token || data.accessToken || data.access_token;
+  if (accessToken) {
+    localStorage.setItem("token", accessToken);
   }
-  if (data.user) {
-    localStorage.setItem("user", JSON.stringify(data.user));
+  // nếu backend trả về refreshToken, lưu luôn
+  const refresh = data.refreshToken || data.refresh_token;
+  if (refresh) {
+    localStorage.setItem("refreshToken", refresh);
+  }
+  const user = data.user || data.profile || data.data?.user;
+  if (user) {
+    localStorage.setItem("user", JSON.stringify(user));
   }
 
   return data;
@@ -49,5 +56,6 @@ export const getCurrentUser = () => {
 // 🔴 Đăng xuất
 export const logout = () => {
   localStorage.removeItem("token");
+  localStorage.removeItem("refreshToken");
   localStorage.removeItem("user");
 };
