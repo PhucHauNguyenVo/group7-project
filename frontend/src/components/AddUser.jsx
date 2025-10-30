@@ -6,6 +6,7 @@ function AddUser({ reloadUsers, showToast }) {
   const [name, setName] = useState("");
   const [role, setRole] = useState("user");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const isValidEmail = (email) =>
@@ -29,6 +30,10 @@ function AddUser({ reloadUsers, showToast }) {
       showToast?.("⚠️ Email không hợp lệ!", "error");
       return;
     }
+    if (password && password.length < 8) {
+      showToast?.("⚠️ Mật khẩu tối thiểu 8 ký tự!", "error");
+      return;
+    }
 
     try {
       setSubmitting(true);
@@ -39,12 +44,15 @@ function AddUser({ reloadUsers, showToast }) {
         return;
       }
 
-      const res = await apiClient.post(`/users`, { name, role, email });
+  const payload = { name, role, email };
+  if (password) payload.password = password; // nếu không nhập, backend sẽ dùng default '123456'
+  const res = await apiClient.post(`/users`, payload);
 
       if (res.status === 201 || res.status === 200) {
         setName("");
         setRole("user");
-        setEmail("");
+  setEmail("");
+  setPassword("");
         showToast?.("✅ Thêm người dùng thành công", "success");
         reloadUsers?.();
       } else {
@@ -77,12 +85,20 @@ function AddUser({ reloadUsers, showToast }) {
         disabled={submitting}
       >
         <option value="user">User</option>
+        <option value="moderator">Moderator</option>
         <option value="admin">Admin</option>
       </select>
       <input
         placeholder="Email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
+        disabled={submitting}
+      />
+      <input
+        type="password"
+        placeholder="Mật khẩu (tuỳ chọn, ≥ 8 ký tự)"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
         disabled={submitting}
       />
       <button type="submit" className="btn btn-primary" disabled={submitting}>

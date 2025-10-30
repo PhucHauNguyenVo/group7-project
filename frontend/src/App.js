@@ -6,10 +6,12 @@ import SignupPage from "./pages/signuppage";
 import HomePage from "./pages/homepage";
 import ProfilePage from "./pages/profilepage";
 import AdminPage from "./pages/adminpage";
+import ModerationPage from "./pages/moderationpage";
 import Navbar from "./components/navbar";
 import ForgotPassword from "./components/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import AvatarUploader from "./components/AvatarUploader";
+import { RequireAuth, RequireRole } from "./components/guards";
 
 import { getToken, clearToken } from "./utils/storage";
 import { getCurrentUser, logout } from "./api/auth";
@@ -53,11 +55,7 @@ function App() {
     setUser(null);
   };
 
-  // ✅ Route bảo vệ: chỉ cho phép khi đã đăng nhập
-  const ProtectedRoute = ({ children }) => {
-    if (!isAuthenticated) return <Navigate to="/login" replace />;
-    return children;
-  };
+  // Giữ lại state hiển thị Navbar, nhưng dùng guards cho route
 
   return (
     
@@ -104,43 +102,18 @@ function App() {
         />
 
         {/* Trang người dùng */}
-        <Route
-          path="/home"
-          element={
-            <ProtectedRoute>
-              <HomePage />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/home" element={<RequireAuth><HomePage /></RequireAuth>} />
 
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <ProfilePage />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/profile" element={<RequireAuth><ProfilePage /></RequireAuth>} />
 
         {/* Upload Avatar (chỉ cho user đã đăng nhập) */}
-        <Route
-          path="/upload-avatar"
-          element={
-            <ProtectedRoute>
-              <AvatarUploader />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/upload-avatar" element={<RequireAuth><AvatarUploader /></RequireAuth>} />
       
-        {/* Trang admin */}
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute>
-              <AdminPage />
-            </ProtectedRoute>
-          }
-        />
+  {/* Trang admin */}
+        <Route path="/admin" element={<RequireAuth><RequireRole roles={["admin"]}><AdminPage /></RequireRole></RequireAuth>} />
+
+  {/* Khu vực Moderator (cả admin và moderator đều vào được) */}
+  <Route path="/moderation" element={<RequireAuth><RequireRole roles={["admin","moderator"]}><ModerationPage /></RequireRole></RequireAuth>} />
 
         {/* Route mặc định */}
         <Route path="*" element={<Navigate to="/" />} />
