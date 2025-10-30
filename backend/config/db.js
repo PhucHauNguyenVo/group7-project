@@ -32,8 +32,6 @@ const buildMongoUri = () => {
 
 const buildMongoOptions = (uri) => {
   const options = {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
     serverSelectionTimeoutMS: Number(process.env.MONGO_SERVER_SELECTION_TIMEOUT_MS) || DEFAULT_TIMEOUT_MS,
     connectTimeoutMS: Number(process.env.MONGO_CONNECT_TIMEOUT_MS) || DEFAULT_TIMEOUT_MS,
   };
@@ -46,6 +44,10 @@ const buildMongoOptions = (uri) => {
 
   if (process.env.MONGO_DB_NAME) {
     options.dbName = process.env.MONGO_DB_NAME;
+  }
+
+  if (process.env.MONGO_DIRECT_CONNECTION === 'true') {
+    options.directConnection = true;
   }
 
   return options;
