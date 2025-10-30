@@ -92,8 +92,6 @@ mongoose
 // Mount routes
   app.use("/api/auth", authRoutes);
   app.use("/api/users", userRoutes);
-  // Alias: mount auth routes also at /api so frontend using /api/forgot-password works
-  app.use("/api", authRoutes);
 
     // Khởi động server
     app.listen(PORT, "0.0.0.0", () => {
