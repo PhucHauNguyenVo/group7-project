@@ -1,7 +1,8 @@
 // frontend/src/pages/loginpage.jsx
 import { useState } from "react";
 import { login } from "../api/auth";
-import { setToken, setUser } from "../utils/storage";
+import { getProfile } from "../api/profile";
+import { setUser } from "../utils/storage";
 import { useNavigate, Link } from "react-router-dom";
 import { IoEyeOutline, IoEyeOffOutline } from "react-icons/io5";
 import "../form.css";
@@ -33,20 +34,22 @@ export default function LoginPage({ onLoginSuccess }) {
     }
 
     try {
-      const res = await login(form); // backend trả về { token, user }
+      const res = await login(form); // backend trả về { token, refreshToken, user }
 
-      // Lưu token và user vào localStorage
-      if (res.token) setToken(res.token);
-      if (res.user) setUser(res.user);
+      // Sau khi có token, gọi API lấy full profile để lưu đủ name/avatar/role
+      try {
+        const prof = await getProfile();
+        const userData = prof.user || prof;
+        if (userData) setUser(userData);
+      } catch (_) {
+        // nếu lấy profile lỗi, vẫn cứ cho vào app; lần sau vào profile sẽ tự fetch lại
+      }
 
       setIsError(false);
       setMessage("✅ Đăng nhập thành công!");
 
-      // Gọi callback nếu có, hoặc chuyển trang sau 0.5s
-      setTimeout(() => {
-        onLoginSuccess?.();
-        navigate("/profile"); // mặc định chuyển vào profile
-      }, 500);
+      onLoginSuccess?.(res);
+      navigate("/profile");
     } catch (err) {
       setIsError(true);
       const backendMsg = err.response?.data?.message || "";
