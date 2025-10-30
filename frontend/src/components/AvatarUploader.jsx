@@ -1,28 +1,43 @@
 import React, { useState } from "react";
 import { uploadAvatar, removeAvatar } from "../api/profile";
+import { resizeImageFile } from "../utils/image";
 
 export default function AvatarUploader({ onUploaded, showToast, currentAvatar }) {
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(currentAvatar || "");
   const [uploading, setUploading] = useState(false);
 
-  const handleFile = (e) => {
+  const handleFile = async (e) => {
     const f = e.target.files[0];
     if (!f) return;
 
-    const validTypes = ["image/jpeg", "image/png", "image/jpg"];
+    const validTypes = ["image/jpeg", "image/png", "image/jpg", "image/webp"];
     if (!validTypes.includes(f.type)) {
-      showToast?.("Chỉ chấp nhận ảnh JPG/PNG", "error");
+      showToast?.("Chỉ chấp nhận ảnh JPG/PNG/WebP", "error");
       return;
     }
 
-    if (f.size > 2 * 1024 * 1024) {
-      showToast?.("Ảnh quá lớn, tối đa 2MB", "error");
-      return;
+    try {
+      // Resize & compress client-side to 512px max dimension, ~85% quality, target <= 1MB
+      const { file: resized, dataUrl, meta } = await resizeImageFile(f, {
+        maxDimension: 512,
+        mimeType: "image/jpeg",
+        initialQuality: 0.85,
+        maxBytes: 1024 * 1024,
+      });
+      setFile(resized);
+      setPreview(dataUrl);
+      // Optional feedback
+      if (f.size > resized.size) {
+        const kb = (n) => Math.round(n / 102.4) / 10; // 1 decimal
+        showToast?.(`Đã nén ảnh: ${kb(f.size)}KB → ${kb(resized.size)}KB (${meta.dstW}x${meta.dstH})`, "success");
+      }
+    } catch (err) {
+      console.error("Resize error:", err);
+      // fallback: use original
+      setFile(f);
+      setPreview(URL.createObjectURL(f));
     }
-
-    setFile(f);
-    setPreview(URL.createObjectURL(f));
   };
 
   const handleUpload = async () => {
@@ -30,7 +45,7 @@ export default function AvatarUploader({ onUploaded, showToast, currentAvatar })
 
     try {
       setUploading(true);
-      const data = await uploadAvatar(file);
+  const data = await uploadAvatar(file);
       console.log("✅ Upload response:", data);
 
       const user = data?.user || data?.data?.user || data?.profile;
@@ -97,7 +112,7 @@ export default function AvatarUploader({ onUploaded, showToast, currentAvatar })
         </div>
       )}
 
-      <input type="file" accept="image/*" onChange={handleFile} />
+  <input type="file" accept="image/*" onChange={handleFile} />
       <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
         <button onClick={handleUpload} disabled={uploading}>
           {uploading ? "Đang upload..." : "Tải lên"}
