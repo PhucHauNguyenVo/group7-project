@@ -95,7 +95,42 @@ exports.deleteUser = async (req, res) => {
 };
 
 /* =========================================================
-   👤 HOẠT ĐỘNG 2: THÔNG TIN CÁ NHÂN
+   �️ HOẠT ĐỘNG 2 (MỞ RỘNG): SET ROLE CHO USER (ADMIN)
+   - Endpoint: PATCH /api/users/:id/role
+   - Chỉ admin được phép thay đổi role của user
+   - Hạn chế role chỉ trong danh sách cho phép
+   ========================================================= */
+exports.setUserRole = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+
+    const allowedRoles = ['user', 'admin', 'moderator'];
+    if (!role || !allowedRoles.includes(role)) {
+      return res.status(400).json({
+        message: 'Role không hợp lệ. Các role hợp lệ: ' + allowedRoles.join(', '),
+        allowedRoles,
+      });
+    }
+
+    const user = await User.findById(id);
+    if (!user) return res.status(404).json({ message: 'User không tồn tại!' });
+
+    user.role = role;
+    await user.save();
+
+    res.status(200).json({
+      message: '✅ Cập nhật role thành công!',
+      user: { id: user._id, email: user.email, role: user.role },
+    });
+  } catch (err) {
+    console.error('❌ Lỗi setUserRole:', err);
+    res.status(500).json({ message: 'Lỗi server khi cập nhật role!' });
+  }
+};
+
+/* =========================================================
+   �👤 HOẠT ĐỘNG 2: THÔNG TIN CÁ NHÂN
    ========================================================= */
 exports.getProfile = async (req, res) => {
   try {

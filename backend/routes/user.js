@@ -18,8 +18,9 @@ router.put('/profile', protect, userController.updateProfile);
 // 🧩 HOẠT ĐỘNG 3: QUẢN LÝ USER (ADMIN)
 // ===========================================================
 
-// 🟢 Lấy danh sách tất cả user (chỉ admin)
-router.get('/', protect, authorizeRoles('admin'), userController.getUsers);
+// 🟢 Lấy danh sách tất cả user (admin + moderator)
+// Moderator có thể xem danh sách nhưng không có quyền xóa/cập nhật role (role change dành cho admin)
+router.get('/', protect, authorizeRoles('admin', 'moderator'), userController.getUsers);
 
 // 🟢 Tạo user mới (chỉ admin)
 router.post('/', protect, authorizeRoles('admin'), userController.createUser);
@@ -29,6 +30,9 @@ router.put('/:id', protect, userController.updateUser);
 
 // 🔴 Xóa user (admin hoặc chính chủ)
 router.delete('/:id', protect, userController.deleteUser);
+
+// 🔧 Admin cập nhật role cho user (ví dụ: set moderator)
+router.patch('/:id/role', protect, authorizeRoles('admin'), userController.setUserRole);
 const upload = require('../middleware/uploadMiddleware');
 
 // 🔹 Upload avatar (người dùng đã đăng nhập)
