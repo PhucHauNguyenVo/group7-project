@@ -30,4 +30,5 @@ export async function fetchUsersList() {
   throw lastErr || new Error("No users endpoint available");
 }
 
-export default { fetchUsersList };
+const UsersApi = { fetchUsersList };
+export default UsersApi;
