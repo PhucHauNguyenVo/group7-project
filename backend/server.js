@@ -11,6 +11,7 @@ const path = require("path");
 // 🌟 Import các routes
 const authRoutes = require(path.join(__dirname, "routes", "auth"));
 const userRoutes = require(path.join(__dirname, "routes", "user"));
+const logsRoutes = require(path.join(__dirname, "routes", "logs"));
 
 // 🌟 Khởi tạo app Express
 const app = express();
@@ -92,6 +93,7 @@ mongoose
 // Mount routes
   app.use("/api/auth", authRoutes);
   app.use("/api/users", userRoutes);
+  app.use("/api/logs", logsRoutes);
 
     // Khởi động server
     app.listen(PORT, "0.0.0.0", () => {
