@@ -9,6 +9,9 @@ export const EP = {
     process.env.REACT_APP_EP_AVATAR_UPLOAD || "/users/upload-avatar",
   avatarDelete:
     process.env.REACT_APP_EP_AVATAR_DELETE || "/users/avatar",
+  // Logs endpoints (có thể override qua .env)
+  logs: process.env.REACT_APP_EP_LOGS || "/logs",
+  adminLogs: process.env.REACT_APP_EP_ADMIN_LOGS || "/admin/logs",
+  logsRecent: process.env.REACT_APP_EP_LOGS_RECENT || "/logs/recent",
 };
-
 export default EP;
