@@ -38,3 +38,8 @@ exports.authorizeRoles = (...roles) => {
     }
   };
 };
+
+// Hỗ trợ API yêu cầu 1 role cụ thể: checkRole('admin')
+exports.checkRole = (role) => {
+  return exports.authorizeRoles(role);
+};

@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const cloudinary = require('../config/cloudinary');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const sharp = require('sharp');
 
 /* =========================================================
    🧩 HOẠT ĐỘNG 3: QUẢN LÝ USER (ADMIN)
@@ -154,6 +155,12 @@ exports.uploadAvatar = async (req, res) => {
       return res.status(400).json({ message: 'Vui lòng chọn ảnh để upload!' });
 
     console.log("📦 Upload ảnh:", req.file.originalname);
+    // Resize image to 256x256 and convert to JPEG for consistency/optimization
+    const resizedBuffer = await sharp(req.file.buffer)
+      .resize(256, 256, { fit: 'cover' })
+      .jpeg({ quality: 80 })
+      .toBuffer();
+
     const result = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         {
@@ -164,7 +171,7 @@ exports.uploadAvatar = async (req, res) => {
         },
         (error, uploadResult) => error ? reject(error) : resolve(uploadResult)
       );
-      stream.end(req.file.buffer);
+      stream.end(resizedBuffer);
     });
 
     req.user.avatar = result.secure_url;
