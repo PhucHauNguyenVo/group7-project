@@ -32,8 +32,11 @@ export const loginThunk = createAsyncThunk(
       const user = getStoredUser();
       return { token, refreshToken, user };
     } catch (err) {
+      // Thông tin lỗi chi tiết để login page có thể xử lý 429 (rate limit)
+      const status = err?.response?.status;
       const message = err?.response?.data?.message || err?.message || "Login failed";
-      return rejectWithValue(message);
+      const retryAfter = err?.response?.headers?.["retry-after"] || err?.response?.headers?.["Retry-After"] || null;
+      return rejectWithValue({ status, message, retryAfter });
     }
   }
 );

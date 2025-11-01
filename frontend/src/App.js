@@ -50,10 +50,7 @@ function App() {
         />
 
         {/* Trang đăng nhập */}
-        <Route
-          path="/login"
-          element={isAuthenticated ? <Navigate to="/home" replace /> : <LoginPage />}
-        />
+        <Route path="/login" element={<LoginPage />} />
 
         {/* Trang đăng ký */}
         <Route

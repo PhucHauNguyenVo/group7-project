@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { logoutThunk } from "../features/auth/authSlice";
 
 export default function ResetPassword() {
   const { token: paramToken } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const q = new URLSearchParams(location.search);
   const queryToken = q.get("token");
   const queryEmail = q.get("email");
@@ -81,8 +84,18 @@ export default function ResetPassword() {
 
       if (!successRes) throw new Error("Tất cả endpoint thử đều thất bại - xem console/network/backend logs");
 
-      alert(successRes.data?.message || "Đổi mật khẩu thành công");
-      navigate("/login");
+      // clear local auth state so user must re-authenticate with new password
+      try {
+        // dispatch logout to clear redux and localStorage
+        dispatch(logoutThunk());
+      } catch (e) {
+        // ignore dispatch errors in case redux not wired in some environments
+        console.warn("Unable to dispatch logoutThunk:", e);
+      }
+
+      alert(successRes.data?.message || "Đổi mật khẩu thành công. Vui lòng đăng nhập lại.");
+      // redirect to login and pass a friendly message
+      navigate("/login", { state: { info: "Vui lòng đăng nhập lại bằng mật khẩu mới." } });
     } catch (err) {
       console.error("DEBUG Final error:", err?.response || err);
       const status = err?.response?.status;

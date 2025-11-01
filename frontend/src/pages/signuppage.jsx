@@ -51,20 +51,28 @@ export default function SignupPage() {
     }
 
     try {
-      await signup({
+      // Gọi API signup và in response ra console để debug
+      const res = await signup({
         name: form.name,
         email: form.email,
         password: form.password,
       });
+      console.log("signup response:", res);
 
       setIsError(false);
-      setMessage("✅ Đăng ký thành công!");
+      // Nếu backend trả message cụ thể thì hiển thị nó
+      const backendMsg = res?.data?.message || res?.data || "Đăng ký thành công";
+      setMessage(`✅ ${backendMsg}`);
+      // Chờ 1s cho người dùng nhìn message rồi chuyển sang login
       setTimeout(() => navigate("/login"), 1000);
     } catch (err) {
+      console.error("signup error:", err?.response || err);
       setIsError(true);
       const backendMsg = err.response?.data?.message || "";
       if (backendMsg.toLowerCase().includes("email")) {
         setMessage("⚠️ Email này đã được sử dụng!");
+      } else if (backendMsg) {
+        setMessage(`❌ ${backendMsg}`);
       } else {
         setMessage("❌ Lỗi khi đăng ký!");
       }
