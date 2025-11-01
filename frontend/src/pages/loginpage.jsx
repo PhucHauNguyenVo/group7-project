@@ -1,8 +1,8 @@
 // frontend/src/pages/loginpage.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { loginThunk } from "../features/auth/authSlice";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { IoEyeOutline, IoEyeOffOutline } from "react-icons/io5";
 import "../form.css";
 
@@ -14,6 +14,14 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const authStatus = useSelector((s) => s?.auth?.status);
+  const token = useSelector((s) => s?.auth?.token);
+  const location = useLocation();
+
+  // Nếu đã đăng nhập sẵn và người dùng truy cập /login, điều hướng về /home ngay
+  useEffect(() => {
+    if (token) navigate("/home");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -39,12 +47,22 @@ export default function LoginPage() {
       if (loginThunk.fulfilled.match(action)) {
         setIsError(false);
         setMessage("✅ Đăng nhập thành công!");
+        // Hiển thị thông báo một chút trước khi chuyển trang
+        await new Promise((r) => setTimeout(r, 2000));
         navigate("/home");
         return;
       }
-      // rejected
-      const backendMsg = action.payload || action.error?.message || "";
+      // rejected -> action.payload may be an object { status, message, retryAfter }
       setIsError(true);
+      const payload = action.payload || {};
+      const backendMsg = payload.message || action.error?.message || "";
+
+      if (payload.status === 429) {
+        const wait = payload.retryAfter || "vài giây";
+        setMessage(`⚠️ Quá nhiều yêu cầu. Vui lòng đợi ${wait} rồi thử lại.`);
+        return;
+      }
+
       const lower = (backendMsg || "").toLowerCase();
       if (lower.includes("invalid") || lower.includes("wrong") || lower.includes("not found")) {
         setMessage("❌ Sai email hoặc mật khẩu!");
@@ -61,6 +79,18 @@ export default function LoginPage() {
     <div className="auth-container">
       <div className="auth-box">
         <h2>Đăng nhập</h2>
+        {/* Thông điệp khi bị chuyển hướng từ route bảo vệ */}
+        {!token && location.state?.reason === "auth" && (
+          <p className="auth-message" style={{ color: "#0d6efd", fontWeight: "bold" }}>
+            Vui lòng đăng nhập để truy cập: {location.state?.from || "trang yêu cầu đăng nhập"}
+          </p>
+        )}
+        {/* Thông điệp thông báo chung (ví dụ: sau khi đổi mật khẩu) */}
+        {location.state?.info && (
+          <p className="auth-message" style={{ color: "#0d6efd", fontWeight: "bold" }}>
+            {location.state.info}
+          </p>
+        )}
         <form onSubmit={handleSubmit}>
           <input
             name="email"

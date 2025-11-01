@@ -1,9 +1,12 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import "../form.css";
 
 
 export default function Navbar({ onLogout, user }) {
   const navigate = useNavigate();
+  const location = useLocation();
+  // Ẩn Navbar trên trang đăng nhập để tránh che nội dung/thông báo
+  if (location.pathname === "/login") return null;
   
   
 console.log("Navbar user:", user);
