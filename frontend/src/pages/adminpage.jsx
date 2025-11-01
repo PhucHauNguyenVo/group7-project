@@ -21,7 +21,14 @@ export default function AdminPage() {
          <div className="profile-card wide-card">
         <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20}}>
           <h2 className="profile-title">🛠️ Quản lý User (Admin)</h2>
-          <button className="btn btn-primary btn-sm" onClick={()=>navigate("/home")}>🏠 Về Home</button>
+          <div>
+            <button className="btn btn-secondary btn-sm me-2" onClick={()=>navigate("/admin/logs")}>
+              📜 Xem Logs
+            </button>
+            <button className="btn btn-primary btn-sm" onClick={()=>navigate("/home")}>
+              🏠 Về Home
+            </button>
+          </div>
         </div>
 
         <AddUser reloadUsers={reloadUsers} showToast={showToast} />

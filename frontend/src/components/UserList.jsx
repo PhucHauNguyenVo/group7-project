@@ -9,6 +9,7 @@ const UserList = forwardRef(({ showToast }, ref) => {
   const [editingUser, setEditingUser] = useState(null);
   const [editData, setEditData] = useState({ name: "", role: "", email: "" });
   const [currentUserRole, setCurrentUserRole] = useState("user");
+  const [currentUserId, setCurrentUserId] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // Lấy danh sách user
@@ -65,6 +66,7 @@ const UserList = forwardRef(({ showToast }, ref) => {
       const me = payload?.me || payload?.currentUser || JSON.parse(localStorage.getItem("user"));
       setUsers(data);
       setCurrentUserRole((me?.role || "user").toLowerCase());
+      setCurrentUserId(me?._id || me?.id || null);
     } catch (err) {
       const status = err?.response?.status;
       const msg = err?.response?.data?.message || err?.message || "";
@@ -86,7 +88,14 @@ const UserList = forwardRef(({ showToast }, ref) => {
   // RBAC flags
   const isAdmin = (currentUserRole || "").toLowerCase() === "admin";
   const isModerator = (currentUserRole || "").toLowerCase() === "moderator";
-  const canEditBasic = isAdmin || isModerator; // sửa name/email
+  // Quyền sửa cơ bản:
+  // - Admin: sửa tất cả
+  // - Moderator: sửa tất cả user KHÔNG PHẢI admin (và dĩ nhiên không được đổi role/xoá)
+  const canEditUserRow = (u) => {
+    const role = String(u?.role || "").toLowerCase();
+    return isAdmin || (isModerator && role !== "admin");
+  };
+  const canEditBasicGlobal = isAdmin || isModerator; // dùng để xác định có hiển thị các control cơ bản hay không
   const canChangeRole = isAdmin; // chỉ admin đổi role
   const canDelete = isAdmin; // chỉ admin xoá
 
@@ -110,7 +119,9 @@ const UserList = forwardRef(({ showToast }, ref) => {
 
   // Bắt đầu chỉnh sửa
   const handleEdit = (user) => {
-    if (!canEditBasic) {
+    // Kiểm tra quyền theo từng user: Moderator được sửa user thường, không sửa admin
+    const canEditThis = canEditUserRow(user);
+    if (!canEditThis) {
       showToast?.("Bạn không có quyền chỉnh sửa người dùng", "error");
       return;
     }
@@ -124,7 +135,9 @@ const UserList = forwardRef(({ showToast }, ref) => {
 
   // Lưu chỉnh sửa
   const handleSave = async (id) => {
-    if (!canEditBasic) {
+    const target = users.find((x) => String(x._id || x.id) === String(id));
+    const canEditThis = canEditUserRow(target);
+    if (!canEditThis) {
       showToast?.("Bạn không có quyền cập nhật người dùng", "error");
       return;
     }
@@ -175,7 +188,7 @@ const UserList = forwardRef(({ showToast }, ref) => {
                       onChange={(e) =>
                         setEditData({ ...editData, name: e.target.value })
                       }
-                      disabled={!canEditBasic}
+                      disabled={!canEditUserRow(u)}
                     />
                   ) : (
                     u.name
@@ -207,14 +220,14 @@ const UserList = forwardRef(({ showToast }, ref) => {
                       onChange={(e) =>
                         setEditData({ ...editData, email: e.target.value })
                       }
-                      disabled={!canEditBasic} // user thường không sửa
+                      disabled={!canEditUserRow(u)}
                     />
                   ) : (
                     u.email
                   )}
                 </td>
                 <td>
-                  {canEditBasic || canDelete ? (
+                  {(canEditBasicGlobal || canDelete) ? (
                     editingUser === (u._id || u.id) ? (
                       <>
                         <button
@@ -232,7 +245,7 @@ const UserList = forwardRef(({ showToast }, ref) => {
                       </>
                     ) : (
                       <>
-                        {canEditBasic && (
+                        {canEditUserRow(u) && (
                           <button
                             className="btn btn-edit"
                             onClick={() => handleEdit(u)}
