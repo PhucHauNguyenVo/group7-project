@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const ActivityLog = require('../models/ActivityLog');
 const User = require('../models/userModel');
+const { protect } = require('../middleware/authMiddleware');
 
 // Middleware: chỉ cho admin truy cập
 function requireAdmin(req, res, next) {
@@ -13,7 +14,7 @@ function requireAdmin(req, res, next) {
 }
 
 // GET /api/logs?page=1&limit=20
-router.get('/', requireAdmin, async (req, res) => {
+router.get('/', protect, requireAdmin, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;

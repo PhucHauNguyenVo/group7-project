@@ -57,18 +57,28 @@ exports.updateUser = async (req, res) => {
     const { id } = req.params;
     const { name, role, email } = req.body;
 
+    // Moderator chỉ được sửa tên/email, không được sửa role
+    if (req.user.role === 'moderator' && req.user._id.toString() !== id) {
+      // Nếu là moderator và không phải chính chủ, chỉ cho sửa tên/email
+      const updated = await User.findByIdAndUpdate(
+        id,
+        { name, email },
+        { new: true }
+      ).select('-password');
+      if (!updated)
+        return res.status(404).json({ message: 'User không tồn tại!' });
+      return res.status(200).json({ message: '✅ Moderator chỉ được sửa tên/email!', user: updated });
+    }
+    // Admin hoặc chính chủ được sửa tất cả
     if (req.user.role !== 'admin' && req.user._id.toString() !== id)
       return res.status(403).json({ message: 'Không có quyền cập nhật user này!' });
-
     const updated = await User.findByIdAndUpdate(
       id,
       { name, role, email },
       { new: true }
     ).select('-password');
-
     if (!updated)
       return res.status(404).json({ message: 'User không tồn tại!' });
-
     res.status(200).json({ message: '✅ Cập nhật user thành công!', user: updated });
   } catch (err) {
     console.error('❌ Lỗi updateUser:', err);

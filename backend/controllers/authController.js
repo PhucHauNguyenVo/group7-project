@@ -3,6 +3,7 @@ const RefreshToken = require('../models/RefreshToken');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const ActivityLog = require('../models/ActivityLog');
 
 // ===========================================================
 // 🧠 HÀM TẠO TOKEN (Access + Refresh)
@@ -43,8 +44,7 @@ exports.signup = async (req, res) => {
       return res.status(400).json({ message: "Hãy nhập đầy đủ thông tin!" });
 
     const userExists = await User.findOne({ email });
-    // Trả response khi logout thành công
-    return res.status(200).json({ message: 'Đăng xuất thành công' });
+    if (userExists)
       return res.status(400).json({ message: "Email đã tồn tại!" });
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -83,6 +83,14 @@ exports.login = async (req, res) => {
       return res.status(400).json({ message: "Sai mật khẩu!" });
 
     const { accessToken, refreshToken } = await generateTokens(user._id);
+
+    // Ghi log login sau khi xác thực thành công
+    await ActivityLog.create({
+      userId: user._id,
+      action: '/api/auth/login',
+      ip: req.headers['x-forwarded-for'] || req.ip,
+      details: `Đăng nhập thành công cho ${user.email}`
+    });
 
     res.status(200).json({
       message: "Đăng nhập thành công",
