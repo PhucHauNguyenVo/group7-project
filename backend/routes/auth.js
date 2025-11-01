@@ -7,8 +7,10 @@ const userController = require('../controllers/userController');
 // 🟢 Đăng ký tài khoản mới (Sign Up)
 router.post('/signup', authController.signup);
 
+const rateLimitLogin = require('../middleware/rateLimitLogin');
+const logActivity = require('../middleware/logActivity');
 // 🟢 Đăng nhập (Login)
-router.post('/login', authController.login);
+router.post('/login', rateLimitLogin, logActivity, authController.login);
 
 // 🟢 Đăng xuất (Logout)
 router.post('/logout', authController.logout);
