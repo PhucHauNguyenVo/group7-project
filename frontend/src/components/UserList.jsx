@@ -1,5 +1,6 @@
 import React, { useEffect, useState, forwardRef, useImperativeHandle } from "react";
-import axios from "axios";
+import apiClient from "../api/apiClient";
+import EP from "../api/endpoints";
 import { getToken } from "../utils/storage";
 import "../form.css";
 
@@ -10,30 +11,65 @@ const UserList = forwardRef(({ showToast }, ref) => {
   const [currentUserRole, setCurrentUserRole] = useState("user");
   const [loading, setLoading] = useState(true);
 
-  const API_URL = process.env.REACT_APP_API_URL;
-
   // Lấy danh sách user
   const fetchUsers = async () => {
-    const token = getToken();
-    if (!token) {
-      showToast?.("Không có token, không thể fetch users", "error");
-      setLoading(false);
-      return;
-    }
-
+    const meLocal = JSON.parse(localStorage.getItem("user") || "null");
+    const isModLocal = (meLocal?.role || "").toLowerCase() === "moderator";
+    const candidates = [
+      EP.usersList,
+      "/users",
+      "/user",
+      "/admin/users",
+      "/users/all",
+      "/users/list",
+      "/users/basic",
+    ];
     try {
-      const res = await axios.get(`${API_URL}/users`, {
-        headers: { Authorization: `Bearer ${token}` },
-        withCredentials: true,
-      });
+      let res;
+      let lastErr;
+      for (const url of candidates) {
+        try {
+          // Đảm bảo header Authorization luôn có mặt
+          const token = getToken();
+          res = await apiClient.get(
+            url,
+            token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+          );
+          break;
+        } catch (e) {
+          lastErr = e;
+          const status = e?.response?.status;
+          // Nếu endpoint không tồn tại hoặc bị cấm (403), thử endpoint kế tiếp
+          if (status === 404 || status === 405 || status === 403) continue;
+          throw e;
+        }
+      }
+      // Nếu moderator không gọi được danh sách, fallback lấy chính profile của họ
+      if (!res && isModLocal) {
+        try {
+          const token = getToken();
+          res = await apiClient.get(
+            EP.profile || "/users/profile",
+            token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+          );
+        } catch (e2) {
+          lastErr = e2;
+        }
+      }
+      if (!res) throw lastErr || new Error("No users endpoint");
 
-      const data = res.data?.users || res.data?.data || [];
-      const me = res.data.me || res.data.currentUser || JSON.parse(localStorage.getItem("user"));
+      const payload = res.data;
+      const data = Array.isArray(payload)
+        ? payload
+        : payload?.users || payload?.data || (payload?._id || payload?.id ? [payload] : []);
+      const me = payload?.me || payload?.currentUser || JSON.parse(localStorage.getItem("user"));
       setUsers(data);
-      setCurrentUserRole(me?.role || "user");
+  setCurrentUserRole((me?.role || "user").toLowerCase());
     } catch (err) {
-      console.error("Lỗi fetchUsers:", err.response || err.message || err);
-      showToast?.("Lỗi lấy dữ liệu user", "error");
+      const status = err?.response?.status;
+      const msg = err?.response?.data?.message || err?.message || "";
+      console.error("Lỗi fetchUsers:", status, msg, err.response || err);
+      showToast?.(`Lỗi lấy dữ liệu user${status ? ` (${status})` : ""}${msg ? ": " + msg : ""}`, "error");
       setUsers([]);
     } finally {
       setLoading(false);
@@ -47,20 +83,30 @@ const UserList = forwardRef(({ showToast }, ref) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // RBAC flags
+  const isAdmin = (currentUserRole || "").toLowerCase() === "admin";
+  const isModerator = (currentUserRole || "").toLowerCase() === "moderator";
+  // Quyền sửa cơ bản:
+  // - Admin: sửa tất cả
+  // - Moderator: sửa tất cả user KHÔNG PHẢI admin (và dĩ nhiên không được đổi role/xoá)
+  const canEditUserRow = (u) => {
+    const role = String(u?.role || "").toLowerCase();
+    return isAdmin || (isModerator && role !== "admin");
+  };
+  const canEditBasicGlobal = isAdmin || isModerator; // dùng để xác định có hiển thị các control cơ bản hay không
+  const canChangeRole = isAdmin; // chỉ admin đổi role
+  const canDelete = isAdmin; // chỉ admin xoá
+
   // Xóa user (chỉ admin)
   const handleDelete = async (id) => {
-    if (currentUserRole !== "admin") {
+    if (!canDelete) {
       showToast?.("Bạn không có quyền xóa người dùng", "error");
       return;
     }
     if (!window.confirm("Bạn có chắc muốn xóa người dùng này không?")) return;
 
     try {
-      const token = getToken();
-      await axios.delete(`${API_URL}/users/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-        withCredentials: true,
-      });
+      await apiClient.delete(`/users/${id}`);
       fetchUsers();
       showToast?.("✅ Xóa người dùng thành công", "success");
     } catch (err) {
@@ -71,7 +117,9 @@ const UserList = forwardRef(({ showToast }, ref) => {
 
   // Bắt đầu chỉnh sửa
   const handleEdit = (user) => {
-    if (currentUserRole !== "admin") {
+    // Kiểm tra quyền theo từng user: Moderator được sửa user thường, không sửa admin
+    const canEditThis = canEditUserRow(user);
+    if (!canEditThis) {
       showToast?.("Bạn không có quyền chỉnh sửa người dùng", "error");
       return;
     }
@@ -85,17 +133,18 @@ const UserList = forwardRef(({ showToast }, ref) => {
 
   // Lưu chỉnh sửa
   const handleSave = async (id) => {
-    if (currentUserRole !== "admin") {
+    const target = users.find((x) => String(x._id || x.id) === String(id));
+    const canEditThis = canEditUserRow(target);
+    if (!canEditThis) {
       showToast?.("Bạn không có quyền cập nhật người dùng", "error");
       return;
     }
 
+    const payload = { name: editData.name, email: editData.email };
+    if (canChangeRole) payload.role = editData.role;
+
     try {
-      const token = getToken();
-      await axios.put(`${API_URL}/users/${id}`, editData, {
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        withCredentials: true,
-      });
+      await apiClient.put(`/users/${id}`, payload);
       setEditingUser(null);
       fetchUsers();
       showToast?.("💾 Cập nhật user thành công", "success");
@@ -127,55 +176,56 @@ const UserList = forwardRef(({ showToast }, ref) => {
           </thead>
           <tbody>
             {users.map((u, i) => (
-              <tr key={u._id} className={i % 2 === 0 ? "row-even" : "row-odd"}>
+              <tr key={u._id || u.id} className={i % 2 === 0 ? "row-even" : "row-odd"}>
                 <td>{i + 1}</td>
                 <td>
-                  {editingUser === u._id ? (
+                  {editingUser === (u._id || u.id) ? (
                     <input
                       className="edit-input"
                       value={editData.name}
                       onChange={(e) =>
                         setEditData({ ...editData, name: e.target.value })
                       }
-                      disabled={currentUserRole !== "admin"}
+                      disabled={!canEditUserRow(u)}
                     />
                   ) : (
                     u.name
                   )}
                 </td>
                 <td>
-                  {editingUser === u._id ? (
+                  {editingUser === (u._id || u.id) ? (
                     <select
                       className="edit-select"
                       value={editData.role}
                       onChange={(e) =>
                         setEditData({ ...editData, role: e.target.value })
                       }
-                      disabled={currentUserRole !== "admin"}
+                      disabled={!canChangeRole}
                     >
                       <option value="user">User</option>
                       <option value="admin">Admin</option>
+                      <option value="moderator">Moderator</option>
                     </select>
                   ) : (
                     u.role
                   )}
                 </td>
                 <td>
-                  {editingUser === u._id ? (
+                  {editingUser === (u._id || u.id) ? (
                     <input
                       className="edit-input"
                       value={editData.email}
                       onChange={(e) =>
                         setEditData({ ...editData, email: e.target.value })
                       }
-                      disabled={currentUserRole !== "admin"} // chỉ admin mới sửa email
+                      disabled={!canEditUserRow(u)}
                     />
                   ) : (
                     u.email
                   )}
                 </td>
                 <td>
-                  {currentUserRole === "admin" ? (
+                  {(canEditBasicGlobal || canDelete) ? (
                     editingUser === (u._id || u.id) ? (
                       <>
                         <button
@@ -193,18 +243,22 @@ const UserList = forwardRef(({ showToast }, ref) => {
                       </>
                     ) : (
                       <>
-                        <button
-                          className="btn btn-edit"
-                          onClick={() => handleEdit(u)}
-                        >
-                          ✏️ Sửa
-                        </button>
-                        <button
-                          className="btn btn-delete"
-                          onClick={() => handleDelete(u._id || u.id)}
-                        >
-                          🗑️ Xóa
-                        </button>
+                        {canEditUserRow(u) && (
+                          <button
+                            className="btn btn-edit"
+                            onClick={() => handleEdit(u)}
+                          >
+                            ✏️ Sửa
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button
+                            className="btn btn-delete"
+                            onClick={() => handleDelete(u._id || u.id)}
+                          >
+                            🗑️ Xóa
+                          </button>
+                        )}
                       </>
                     )
                   ) : (

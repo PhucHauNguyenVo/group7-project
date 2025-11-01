@@ -27,6 +27,14 @@ console.log("Navbar user role:", user?.role);
      Admin
   </button>
 )}
+        {user?.role?.toLowerCase() === "moderator" && (
+          <button
+            className="btn btn-secondary"
+            onClick={() => navigate("/moderation")}
+          >
+            Moderator
+          </button>
+        )}
         <button className="btn btn-primary" onClick={() => navigate("/profile")}>
           Hồ sơ cá nhân
         </button>

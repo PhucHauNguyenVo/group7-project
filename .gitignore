@@ -8,3 +8,6 @@ frontend/node_modules/
 # Env files
 *.env
 backend/.env
+node_modules
+node_modules_tmp
+/backend/node_modules

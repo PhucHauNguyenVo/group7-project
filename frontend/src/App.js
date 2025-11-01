@@ -1,63 +1,39 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 import LoginPage from "./pages/loginpage";
 import SignupPage from "./pages/signuppage";
 import HomePage from "./pages/homepage";
 import ProfilePage from "./pages/profilepage";
 import AdminPage from "./pages/adminpage";
+import ModerationPage from "./pages/moderationpage";
+import AdminLogsPage from "./pages/adminLogsPage";
 import Navbar from "./components/navbar";
 import ForgotPassword from "./components/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import AvatarUploader from "./components/AvatarUploader";
+import { RequireAuth, RequireRole } from "./components/guards";
 
-import { getToken, clearToken } from "./utils/storage";
-import { getCurrentUser, logout } from "./api/auth";
+import { clearToken } from "./utils/storage";
+import { logout as apiLogout } from "./api/auth";
+import { logoutThunk } from "./features/auth/authSlice";
 
 function App() {
-  // 🚀 Ban đầu chưa xác thực
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState(null);
-
-  // ✅ Khi app khởi chạy, kiểm tra token & user trong localStorage
-  useEffect(() => {
-    const token = getToken();
-    const savedUser = getCurrentUser();
-
-    if (token && savedUser) {
-      setIsAuthenticated(true);
-      setUser(savedUser);
-      console.log("✅ Khôi phục phiên đăng nhập:", savedUser);
-    } else {
-      console.log("🚪 Chưa đăng nhập hoặc thiếu thông tin user");
-    }
-  }, []);
-
-  // ✅ Khi đăng nhập thành công
-  const handleLoginSuccess = (data) => {
-    console.log("✅ onLoginSuccess nhận được:", data);
-    setIsAuthenticated(true);
-
-    // lấy user từ localStorage (do login đã lưu)
-    const savedUser = getCurrentUser();
-    setUser(savedUser || data?.user || data);
-  };
+  const dispatch = useDispatch();
+  const token = useSelector((s) => s?.auth?.token);
+  const user = useSelector((s) => s?.auth?.user);
+  const isAuthenticated = useMemo(() => Boolean(token), [token]);
 
   // ✅ Khi đăng xuất
   const handleLogout = () => {
     console.log("🚪 Đăng xuất!");
-    logout();
-    clearToken();
-    localStorage.removeItem("user");
-    setIsAuthenticated(false);
-    setUser(null);
+    try { apiLogout(); } catch (_) {}
+    try { clearToken(); } catch (_) {}
+    dispatch(logoutThunk());
   };
 
-  // ✅ Route bảo vệ: chỉ cho phép khi đã đăng nhập
-  const ProtectedRoute = ({ children }) => {
-    if (!isAuthenticated) return <Navigate to="/login" replace />;
-    return children;
-  };
+  // Giữ lại state hiển thị Navbar, nhưng dùng guards cho route
 
   return (
     
@@ -76,13 +52,7 @@ function App() {
         {/* Trang đăng nhập */}
         <Route
           path="/login"
-          element={
-            isAuthenticated ? (
-              <Navigate to="/home" replace />
-            ) : (
-              <LoginPage onLoginSuccess={handleLoginSuccess} />
-            )
-          }
+          element={isAuthenticated ? <Navigate to="/home" replace /> : <LoginPage />}
         />
 
         {/* Trang đăng ký */}
@@ -104,43 +74,21 @@ function App() {
         />
 
         {/* Trang người dùng */}
-        <Route
-          path="/home"
-          element={
-            <ProtectedRoute>
-              <HomePage />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/home" element={<RequireAuth><HomePage /></RequireAuth>} />
 
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <ProfilePage />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/profile" element={<RequireAuth><ProfilePage /></RequireAuth>} />
 
         {/* Upload Avatar (chỉ cho user đã đăng nhập) */}
-        <Route
-          path="/upload-avatar"
-          element={
-            <ProtectedRoute>
-              <AvatarUploader />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/upload-avatar" element={<RequireAuth><AvatarUploader /></RequireAuth>} />
       
-        {/* Trang admin */}
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute>
-              <AdminPage />
-            </ProtectedRoute>
-          }
-        />
+  {/* Trang admin */}
+        <Route path="/admin" element={<RequireAuth><RequireRole roles={["admin"]}><AdminPage /></RequireRole></RequireAuth>} />
+
+    {/* Logs cho Admin */}
+    <Route path="/admin/logs" element={<RequireAuth><RequireRole roles={["admin"]}><AdminLogsPage /></RequireRole></RequireAuth>} />
+
+  {/* Khu vực Moderator (cả admin và moderator đều vào được) */}
+  <Route path="/moderation" element={<RequireAuth><RequireRole roles={["admin","moderator"]}><ModerationPage /></RequireRole></RequireAuth>} />
 
         {/* Route mặc định */}
         <Route path="*" element={<Navigate to="/" />} />
