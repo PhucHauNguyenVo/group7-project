@@ -26,7 +26,7 @@ export default function ProfilePage() {
 
     const fetchProfile = async () => {
       try {
-        const data = await getProfile(token);
+  const data = await getProfile();
         const userData = data.user || data;
 
         // Merge với localStorage (giữ avatar, role nếu có)
@@ -55,12 +55,14 @@ export default function ProfilePage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const updated = await updateProfile(token, { name: form.name, email: form.email });
-      const updatedUser = updated.user;
+  const updated = await updateProfile({ name: form.name, email: form.email });
+  const updatedUser = updated.user || updated;
 
-      setUser(updatedUser);
-      setUserState(updatedUser);
-      setForm({ name: updatedUser.name, email: updatedUser.email });
+  // Nếu backend không trả avatar hoặc một số field, giữ lại giá trị cũ để tránh bị "mất avatar"
+  const merged = { ...(getUser() || {}), ...(updatedUser || {}) };
+  setUser(merged);
+  setUserState(merged);
+  setForm({ name: merged.name || "", email: merged.email || "" });
       setEditing(false);
       showToastMsg("Cập nhật thông tin thành công!", "success");
     } catch (err) {
@@ -83,7 +85,7 @@ export default function ProfilePage() {
 
   const handleRemoveAvatar = async () => {
     try {
-      const updated = await updateProfile(token, { avatar: "" }); // backend cần hỗ trợ avatar="" để xóa
+  const updated = await updateProfile({ avatar: "" }); // backend cần hỗ trợ avatar="" để xóa
       const updatedUser = updated.user;
       setUser(updatedUser);
       setUserState(updatedUser);
@@ -132,7 +134,7 @@ export default function ProfilePage() {
               {showUploader ? "Đóng" : "Tải lên avatar"}
             </button>
             {userState?.avatar && (
-              <button className="btn btn-cancel" onClick={handleRemoveAvatar}>
+              <button className="btn btn-danger" onClick={handleRemoveAvatar}>
                 ❌ Xóa avatar
               </button>
             )}
@@ -172,7 +174,7 @@ export default function ProfilePage() {
 
             <div className="form-buttons">
               <button type="submit" className="btn btn-success">💾 Lưu</button>
-              <button type="button" className="btn btn-cancel" onClick={() => setEditing(false)}>❌ Hủy</button>
+              <button type="button" className="btn btn-secondary" onClick={() => setEditing(false)}>❌ Hủy</button>
               <button type="button" className="btn btn-primary" onClick={() => navigate("/home")}>🏠 Về Home</button>
             </div>
           </form>

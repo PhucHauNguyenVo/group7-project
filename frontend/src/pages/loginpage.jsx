@@ -1,17 +1,19 @@
 // frontend/src/pages/loginpage.jsx
 import { useState } from "react";
-import { login } from "../api/auth";
-import { setToken, setUser } from "../utils/storage";
+import { useDispatch, useSelector } from "react-redux";
+import { loginThunk } from "../features/auth/authSlice";
 import { useNavigate, Link } from "react-router-dom";
 import { IoEyeOutline, IoEyeOffOutline } from "react-icons/io5";
 import "../form.css";
 
-export default function LoginPage({ onLoginSuccess }) {
+export default function LoginPage() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const authStatus = useSelector((s) => s?.auth?.status);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -33,32 +35,25 @@ export default function LoginPage({ onLoginSuccess }) {
     }
 
     try {
-      const res = await login(form); // backend trả về { token, user }
-
-      // Lưu token và user vào localStorage
-      if (res.token) setToken(res.token);
-      if (res.user) setUser(res.user);
-
-      setIsError(false);
-      setMessage("✅ Đăng nhập thành công!");
-
-      // Gọi callback nếu có, hoặc chuyển trang sau 0.5s
-      setTimeout(() => {
-        onLoginSuccess?.();
-        navigate("/profile"); // mặc định chuyển vào profile
-      }, 500);
-    } catch (err) {
+      const action = await dispatch(loginThunk(form));
+      if (loginThunk.fulfilled.match(action)) {
+        setIsError(false);
+        setMessage("✅ Đăng nhập thành công!");
+        navigate("/home");
+        return;
+      }
+      // rejected
+      const backendMsg = action.payload || action.error?.message || "";
       setIsError(true);
-      const backendMsg = err.response?.data?.message || "";
-      if (
-        backendMsg.toLowerCase().includes("invalid") ||
-        backendMsg.toLowerCase().includes("wrong") ||
-        backendMsg.toLowerCase().includes("not found")
-      ) {
+      const lower = (backendMsg || "").toLowerCase();
+      if (lower.includes("invalid") || lower.includes("wrong") || lower.includes("not found")) {
         setMessage("❌ Sai email hoặc mật khẩu!");
       } else {
         setMessage("❌ Lỗi khi đăng nhập!");
       }
+    } catch (_) {
+      setIsError(true);
+      setMessage("❌ Lỗi khi đăng nhập!");
     }
   };
 
@@ -106,7 +101,9 @@ export default function LoginPage({ onLoginSuccess }) {
             </span>
           </div>
 
-          <button type="submit">Đăng nhập</button>
+          <button type="submit" disabled={authStatus === "loading"}>
+            {authStatus === "loading" ? "Đang đăng nhập..." : "Đăng nhập"}
+          </button>
         </form>
 
         {message && (
