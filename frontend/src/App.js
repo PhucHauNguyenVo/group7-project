@@ -7,6 +7,7 @@ import HomePage from "./pages/homepage";
 import ProfilePage from "./pages/profilepage";
 import AdminPage from "./pages/adminpage";
 import ModerationPage from "./pages/moderationpage";
+import AdminLogsPage from "./pages/adminLogsPage";
 import Navbar from "./components/navbar";
 import ForgotPassword from "./components/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
@@ -111,6 +112,9 @@ function App() {
       
   {/* Trang admin */}
         <Route path="/admin" element={<RequireAuth><RequireRole roles={["admin"]}><AdminPage /></RequireRole></RequireAuth>} />
+
+    {/* Logs cho Admin */}
+    <Route path="/admin/logs" element={<RequireAuth><RequireRole roles={["admin"]}><AdminLogsPage /></RequireRole></RequireAuth>} />
 
   {/* Khu vực Moderator (cả admin và moderator đều vào được) */}
   <Route path="/moderation" element={<RequireAuth><RequireRole roles={["admin","moderator"]}><ModerationPage /></RequireRole></RequireAuth>} />
