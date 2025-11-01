@@ -9,7 +9,6 @@ const UserList = forwardRef(({ showToast }, ref) => {
   const [editingUser, setEditingUser] = useState(null);
   const [editData, setEditData] = useState({ name: "", role: "", email: "" });
   const [currentUserRole, setCurrentUserRole] = useState("user");
-  const [currentUserId, setCurrentUserId] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // Lấy danh sách user
@@ -65,8 +64,7 @@ const UserList = forwardRef(({ showToast }, ref) => {
         : payload?.users || payload?.data || (payload?._id || payload?.id ? [payload] : []);
       const me = payload?.me || payload?.currentUser || JSON.parse(localStorage.getItem("user"));
       setUsers(data);
-      setCurrentUserRole((me?.role || "user").toLowerCase());
-      setCurrentUserId(me?._id || me?.id || null);
+  setCurrentUserRole((me?.role || "user").toLowerCase());
     } catch (err) {
       const status = err?.response?.status;
       const msg = err?.response?.data?.message || err?.message || "";
