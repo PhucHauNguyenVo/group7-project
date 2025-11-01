@@ -10,3 +10,14 @@ export const getUser = () => {
   return stored ? JSON.parse(stored) : null;
 };
 export const clearUser = () => localStorage.removeItem("user");
+
+// Refresh token helpers
+export const setRefreshToken = (refreshToken) => localStorage.setItem("refreshToken", refreshToken);
+export const getRefreshToken = () => localStorage.getItem("refreshToken");
+export const clearRefreshToken = () => localStorage.removeItem("refreshToken");
+
+export const clearAllAuth = () => {
+  clearToken();
+  clearRefreshToken();
+  clearUser();
+};

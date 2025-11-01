@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import axios from "axios";
+import apiClient from "../api/apiClient";
 import { useNavigate } from "react-router-dom";
 
 export default function ForgotPassword() {
@@ -20,10 +20,7 @@ export default function ForgotPassword() {
       setLoading(true);
       console.log("Gửi email:", email); // debug
 
-      const res = await axios.post(
-        `${process.env.REACT_APP_API_URL}/auth/forgot-password`,
-        { email }
-      );
+      const res = await apiClient.post(`/auth/forgot-password`, { email });
 
       console.log("Response:", res.data); // debug
       alert(res.data?.message || "Đã gửi token tới email"); // test frontend
